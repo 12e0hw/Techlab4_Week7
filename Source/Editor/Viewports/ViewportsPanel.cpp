@@ -1,10 +1,13 @@
-﻿#include "EnginePCH.h"
+#include "EnginePCH.h"
 #include "Editor/Viewports/ViewportsPanel.h"
 #include "Editor/LevelEditor/MultipleViewports/Adapter/MultipleViewportsAdapter.h"
 
 #include "Core/StatOverlay.h"
 #include "Core/Stats/LightweightStats.h"
 #include "Render/RenderCommand.h"
+#include "Render/Renderer.h"
+#include "Engine/Engine.h"
+#include "Launch/LaunchEngineLoop.h"
 
 #include <algorithm>
 #include <cassert>
@@ -248,10 +251,26 @@ void FViewportsPanel::OnRender()
         {
             int Mode = ViewportAdapter->IsViewWireframe(ViewIndex) ? 1 : 0;
             const char* Labels[] = {"Solid", "Wireframe"};
-            ImGui::SetNextItemWidth(100.0f);
+            ImGui::SetNextItemWidth(90.0f);
             if (ImGui::Combo("##FillMode", &Mode, Labels, 2))
                 ViewportAdapter->SetViewWireframe(ViewIndex, Mode == 1);
             ImGui::SameLine();
+        }
+
+        // 셰이딩 모델 뷰모드 오버라이드 (Default / Force Gouraud / Force Lambert / Force Blinn-Phong)
+        if (GEngine)
+        {
+            if (FRenderer* Renderer = GEngine->GetEngineLoop().GetRenderer())
+            {
+                int ShadingMode = Renderer->GetShadingModelOverride() + 1;
+                const char* ShadingLabels[] = { "Lit (Default)", "Force Gouraud", "Force Lambert", "Force Blinn-Phong" };
+                ImGui::SetNextItemWidth(125.0f);
+                if (ImGui::Combo("##ShadingOverride", &ShadingMode, ShadingLabels, 4))
+                {
+                    Renderer->SetShadingModelOverride(ShadingMode - 1);
+                }
+                ImGui::SameLine();
+            }
         }
         if (CurrentLayoutMode == ELayoutMode::QuadSplit)
 		{

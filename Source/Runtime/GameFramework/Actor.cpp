@@ -284,10 +284,25 @@ UActorComponent* AActor::AddComponent(UClass* ComponentClass, FName Name)
         return nullptr;
     }
 
-	if (UPrimitiveComponent* Primitive = Cast<UPrimitiveComponent>(NewComponent))
-	{
-        World->GetScene().AddPrimitive(Primitive);
-	}
+    if (World)
+    {
+        if (UPrimitiveComponent* Primitive = Cast<UPrimitiveComponent>(NewComponent))
+        {
+            World->GetScene().AddPrimitive(Primitive);
+        }
+        else if (ULightComponent* Light = Cast<ULightComponent>(NewComponent))
+        {
+            World->GetScene().RegisterLight(Light);
+        }
+        else if (UFireBallComponent* FireBall = Cast<UFireBallComponent>(NewComponent))
+        {
+            World->GetScene().RegisterFireBall(FireBall);
+        }
+        else if (UExponentialHeightFogComponent* Fog = Cast<UExponentialHeightFogComponent>(NewComponent))
+        {
+            World->GetScene().AddFogInfo(Fog->GetUUID(), Fog->GetFogInfo());
+        }
+    }
     
 	if (USceneComponent* SceneComponent = Cast<USceneComponent>(NewComponent))
 	{

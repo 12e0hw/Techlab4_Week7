@@ -529,6 +529,72 @@ namespace
 						ImGui::EndCombo();
 					}
 
+					ImGui::TableNextRow();
+
+					// 7: Shading Model
+					ImGui::TableSetColumnIndex(0);
+					ImGui::Text("Shading Model");
+
+					ImGui::TableSetColumnIndex(1);
+					ImGui::SetNextItemWidth(-1.0f);
+
+					const char* ShadingModelItems[] = { "Gouraud", "Lambert", "Blinn-Phong" };
+					int ModelIndex = Effective ? static_cast<int>(Effective->GetShadingModel()) : static_cast<int>(EShadingModel::Lambert);
+					if (ImGui::BeginCombo("##ShadingModel", ShadingModelItems[ModelIndex]))
+					{
+						for (int i = 0; i < static_cast<int>(EShadingModel::Count); ++i)
+						{
+							if (ImGui::Selectable(ShadingModelItems[i], ModelIndex == i))
+							{
+								Override = EnsureMaterialOverride(MeshComponent, Slot, Effective, Override);
+								if (Override)
+								{
+									Override->SetShadingModel(static_cast<EShadingModel>(i));
+									Effective = Override;
+								}
+							}
+						}
+						ImGui::EndCombo();
+					}
+
+					// 8: Specular Color
+					ImGui::TableNextRow();
+					ImGui::TableSetColumnIndex(0);
+					ImGui::Text("Specular Color");
+
+					ImGui::TableSetColumnIndex(1);
+					ImGui::SetNextItemWidth(-1.0f);
+
+					FVector TempSpecColor = Effective ? Effective->SpecularColor : FVector(1.0f, 1.0f, 1.0f);
+					if (ImGui::ColorEdit3("##SpecularColor", &TempSpecColor.X))
+					{
+						Override = EnsureMaterialOverride(MeshComponent, Slot, Effective, Override);
+						if (Override)
+						{
+							Override->SpecularColor = TempSpecColor;
+							Effective = Override;
+						}
+					}
+
+					// 9: Shininess
+					ImGui::TableNextRow();
+					ImGui::TableSetColumnIndex(0);
+					ImGui::Text("Shininess");
+
+					ImGui::TableSetColumnIndex(1);
+					ImGui::SetNextItemWidth(-1.0f);
+
+					float TempShininess = Effective ? Effective->Shininess : 32.0f;
+					if (ImGui::DragFloat("##Shininess", &TempShininess, 1.0f, 1.0f, 256.0f, "%.1f"))
+					{
+						Override = EnsureMaterialOverride(MeshComponent, Slot, Effective, Override);
+						if (Override)
+						{
+							Override->Shininess = TempShininess;
+							Effective = Override;
+						}
+					}
+
 					ImGui::EndTable();
 				}
 				ImGui::TreePop();

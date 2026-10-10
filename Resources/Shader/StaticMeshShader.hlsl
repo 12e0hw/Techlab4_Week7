@@ -1,7 +1,9 @@
 #pragma pack_matrix(row_major)
+
 cbuffer Viewconstants : register(b0)
 {
     matrix VP;
+    float4 CameraPosition; // xyz: 카메라 월드 위치, w: 패딩
 };
 
 cbuffer Worldconstants : register(b2)
@@ -12,6 +14,8 @@ cbuffer Worldconstants : register(b2)
 cbuffer MaterialParams : register(b1)
 {
     float4 BaseColor;
+    float3 SpecularColor;
+    float Shininess;
     float2 UVOffset;
     float bOpaque;
     float Padding;
@@ -57,9 +61,9 @@ cbuffer LightConstants : register(b3)
 
 struct VS_INPUT
 {
-    float3 p : POSITION; // Input position from vertex buffer
+    float3 p : POSITION;
     float3 n : NORMAL;
-    float4 c : COLOR; // Input color from vertex buffer
+    float4 c : COLOR;
     float2 t : TEXCOORD;
 };
 
@@ -75,35 +79,6 @@ struct PS_INPUT
 Texture2D g_txColor : register(t0);
 SamplerState g_Sample : register(s0);
 
-PS_INPUT mainVS(VS_INPUT input)
-{
-    PS_INPUT output;
-
-    output.worldPos = mul(float4(input.p, 1.0f), World).xyz;
-    output.position = mul(mul(float4(input.p, 1.0f), World), VP);
-    
-    // w=0으로 이동 성분을 빼고 월드 공간으로 보낸다. 비균등 스케일이면 역전치가 필요하다.
-    output.normal = mul(float4(input.n, 0.0f), World).xyz;
-    output.color = input.c;
-    output.uv = input.t;
-    return output;
-}
-
-// =========================================================================
-// [추상화 1] 최종 표면 법선 N 결정부 (Normal Mapping 대응 지점)
-// =========================================================================
-float3 GetWorldNormal(PS_INPUT input)
-{
-    // [추후 노멀 매핑 적용 시]:
-    // 1. 노멀 맵 텍스처에서 탄젠트 공간 노멀 샘플링 (sample * 2 - 1)
-    // 2. TBN 행렬 구성 (input.tangent, input.bitangent, input.normal)
-    // 3. 월드 노멀 변환: normalize(mul(sample, TBN))
-    return normalize(input.normal);
-}
-
-// =========================================================================
-// [추상화 2] 개별 라이트 계산 함수 (Tile-based Light Culling 대비 지점)
-// =========================================================================
 float3 CalcAmbientLight(AmbientLightData ambient, uint count)
 {
     if (count > 0)
@@ -113,22 +88,44 @@ float3 CalcAmbientLight(AmbientLightData ambient, uint count)
     return float3(0.1f, 0.1f, 0.1f);
 }
 
-float3 CalcDirectionalLight(DirectionalLightData dirLight, float3 N, uint count)
+float3 CalcDirectionalLight(DirectionalLightData dirLight, float3 N, uint count, float3 V)
 {
+    float specPower = max(Shininess, 1.0f);
+
     if (count > 0 && dirLight.Direction.w > 0.5f)
     {
         float3 L = -normalize(dirLight.Direction.xyz);
         float NdotL = saturate(dot(N, L));
-        return dirLight.ColorIntensity.rgb * (dirLight.ColorIntensity.w * NdotL);
+        float3 diffuse = dirLight.ColorIntensity.rgb * (dirLight.ColorIntensity.w * NdotL);
+
+#if defined(SHADING_MODEL_BLINN_PHONG)
+        if (NdotL > 0.0f)
+        {
+            float3 H = normalize(L + V);
+            float NdotH = saturate(dot(N, H));
+            float spec = pow(NdotH, specPower);
+            diffuse += SpecularColor * (dirLight.ColorIntensity.rgb * (dirLight.ColorIntensity.w * spec));
+        }
+#endif
+        return diffuse;
     }
 
-    // Directional Light가 씬에 없을 때의 기본 디폴트 키 라이트
+    // Directional Light가 없을 때의 디폴트 키 라이트
     float3 defaultDir = normalize(float3(0.5f, 0.5f, -1.0f));
     float defaultNdotL = saturate(dot(N, -defaultDir));
-    return float3(0.5f, 0.5f, 0.5f) * defaultNdotL;
+    float3 defaultDiff = float3(0.5f, 0.5f, 0.5f) * defaultNdotL;
+#if defined(SHADING_MODEL_BLINN_PHONG)
+    if (defaultNdotL > 0.0f)
+    {
+        float3 H = normalize(-defaultDir + V);
+        float NdotH = saturate(dot(N, H));
+        defaultDiff += SpecularColor * (float3(0.5f, 0.5f, 0.5f) * pow(NdotH, specPower));
+    }
+#endif
+    return defaultDiff;
 }
 
-float3 CalcPointLight(PointLightData pointLight, float3 worldPos, float3 N)
+float3 CalcPointLight(PointLightData pointLight, float3 worldPos, float3 N, float3 V)
 {
     if (pointLight.FalloffEnabled.y < 0.5f)
         return float3(0, 0, 0);
@@ -143,10 +140,22 @@ float3 CalcPointLight(PointLightData pointLight, float3 worldPos, float3 N)
     float3 lightDir = normalize(pointLight.PositionRadius.xyz - worldPos);
     
     float pointNdotL = saturate(dot(N, lightDir));
-    return pointLight.ColorIntensity.rgb * (pointNdotL * falloff * intensity);
+    float3 diffuse = pointLight.ColorIntensity.rgb * pointNdotL;
+
+#if defined(SHADING_MODEL_BLINN_PHONG)
+    if (pointNdotL > 0.0f)
+    {
+        float3 H = normalize(lightDir + V);
+        float NdotH = saturate(dot(N, H));
+        float specPower = max(Shininess, 1.0f);
+        diffuse += SpecularColor * (pointLight.ColorIntensity.rgb * pow(NdotH, specPower));
+    }
+#endif
+
+    return diffuse * (falloff * intensity);
 }
 
-float3 CalcSpotLight(SpotLightData spotLight, float3 worldPos, float3 N)
+float3 CalcSpotLight(SpotLightData spotLight, float3 worldPos, float3 N, float3 V)
 {
     if (spotLight.DirectionEnabled.w < 0.5f)
         return float3(0, 0, 0);
@@ -170,41 +179,101 @@ float3 CalcSpotLight(SpotLightData spotLight, float3 worldPos, float3 N)
     float3 lightDir = -lightToPixel;
     float spotNdotL = saturate(dot(N, lightDir));
     
-    return spotLight.ColorIntensity.rgb * (spotNdotL * falloff * spotCone * intensity);
+    float3 diffuse = spotLight.ColorIntensity.rgb * spotNdotL;
+
+#if defined(SHADING_MODEL_BLINN_PHONG)
+    if (spotNdotL > 0.0f)
+    {
+        float3 H = normalize(lightDir + V);
+        float NdotH = saturate(dot(N, H));
+        float specPower = max(Shininess, 1.0f);
+        diffuse += SpecularColor * (spotLight.ColorIntensity.rgb * pow(NdotH, specPower));
+    }
+#endif
+
+    return diffuse * (falloff * spotCone * intensity);
 }
 
-float4 mainPS(PS_INPUT input) : SV_TARGET
+// 최종 표면 법선 N 결정부 (Normal Mapping 대응 지점)
+float3 GetWorldNormal(PS_INPUT input)
 {
-    // Mesh 표면색
+    // 추후 노멀 매핑 적용 시:
+    // 1. 노멀 맵 텍스처에서 탄젠트 공간 노멀 샘플링 (sample * 2 - 1)
+    // 2. TBN 행렬 구성 (input.tangent, input.bitangent, input.normal)
+    // 3. 월드 노멀 변환: normalize(mul(sample, TBN))
+    return normalize(input.normal);
+}
+
+//-----------------------------
+PS_INPUT mainVS(VS_INPUT input)
+//-----------------------------
+{
+    PS_INPUT output;
+
+    output.worldPos = mul(float4(input.p, 1.0f), World).xyz;
+    output.position = mul(mul(float4(input.p, 1.0f), World), VP);
+    output.normal = mul(float4(input.n, 0.0f), World).xyz;
+    output.uv = input.t;
+
+#if defined(SHADING_MODEL_GOURAUD)
+    float3 N = normalize(output.normal);
+    float3 ambient = CalcAmbientLight(AmbientLight, AmbientLightCount);
+    float3 dir = CalcDirectionalLight(DirectionalLight, N, DirectionalLightCount, float3(0, 0, 0));
+    float3 totalPt = float3(0, 0, 0);
+    for (uint i = 0; i < PointLightCount; ++i)
+    {
+        totalPt += CalcPointLight(PointLights[i], output.worldPos, N, float3(0, 0, 0));
+    }
+    float3 totalSpot = float3(0, 0, 0);
+    for (uint j = 0; j < SpotLightCount; ++j)
+    {
+        totalSpot += CalcSpotLight(SpotLights[j], output.worldPos, N, float3(0, 0, 0));
+    }
+    output.color = float4(ambient + dir + totalPt + totalSpot, 1.0f);
+#else
+    output.color = input.c;
+#endif
+
+    return output;
+}
+
+//---------------------------------------
+float4 mainPS(PS_INPUT input) : SV_TARGET
+//---------------------------------------
+{
     float4 texColor = g_txColor.Sample(g_Sample, input.uv + UVOffset);
     float4 albedo = texColor * BaseColor;
-    
-    // 1. 최종 표면 법선 N 결정 (Normal Mapping 추상화 지점)
+
+#if defined(SHADING_MODEL_GOURAUD)
+    // Gouraud Shading: 보간된 정점 컬러를 알베도와 곱함
+    float3 finalRGB = albedo.rgb * input.color.rgb;
+#else
     float3 N = GetWorldNormal(input);
 
-    // 2. 환경광 및 방향광 계산
-    float3 ambientLight = CalcAmbientLight(AmbientLight, AmbientLightCount);
-    float3 dirLight = CalcDirectionalLight(DirectionalLight, N, DirectionalLightCount);
+    float3 V = float3(0, 0, 0);
+#if defined(SHADING_MODEL_BLINN_PHONG)
+    V = normalize(CameraPosition.xyz - input.worldPos);
+#endif
 
-    // 3. 점광원 누적 계산 (Tile-based Culling 시 인덱스 버퍼 순회로 루프만 교체)
+    float3 ambientLight = CalcAmbientLight(AmbientLight, AmbientLightCount);
+    float3 dirLight = CalcDirectionalLight(DirectionalLight, N, DirectionalLightCount, V);
+
     float3 totalPointLight = float3(0, 0, 0);
     for (uint i = 0; i < PointLightCount; ++i)
     {
-        totalPointLight += CalcPointLight(PointLights[i], input.worldPos, N);
+        totalPointLight += CalcPointLight(PointLights[i], input.worldPos, N, V);
     }
 
-    // 4. 스포트라이트 누적 계산 (Tile-based Culling 시 인덱스 버퍼 순회로 루프만 교체)
     float3 totalSpotLight = float3(0, 0, 0);
     for (uint j = 0; j < SpotLightCount; ++j)
     {
-        totalSpotLight += CalcSpotLight(SpotLights[j], input.worldPos, N);
+        totalSpotLight += CalcSpotLight(SpotLights[j], input.worldPos, N, V);
     }
 
     float3 lighting = ambientLight + dirLight + totalPointLight + totalSpotLight;
-    
-    // Opaque는 알파를 1로 고정한다. 뷰포트 RT를 ImGui가 알파 블렌딩으로 그리므로 알파가 남으면 비쳐 보인다
-    float alpha = bOpaque > 0.5f ? 1.0f : albedo.a;
-    
     float3 finalRGB = albedo.rgb * lighting;
+#endif
+
+    float alpha = bOpaque > 0.5f ? 1.0f : albedo.a;
     return float4(finalRGB, alpha);
 }

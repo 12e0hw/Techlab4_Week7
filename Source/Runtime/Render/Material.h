@@ -3,6 +3,7 @@
 #include "MaterialInterface.h"
 #include "Render/RenderStates.h"
 #include "Render/Texture2D.h"
+#include "Render/RenderEnums.h"
 
 class FShader;
 
@@ -18,9 +19,11 @@ enum class EMaterialParamLayout
 struct FStaticMeshMaterialParams
 {
 	FVector4 BaseColor;
+	FVector SpecularColor = FVector(1.0f, 1.0f, 1.0f);
+	float Shininess = 32.0f;
 	FVector2 UVOffset;
 	float bOpaque; // 1이면 PS가 알파를 1로 출력한다
-	float Padding;
+	float Padding = 0.0f;
 };
 
 class UMaterial : public UMaterialInterface
@@ -32,7 +35,12 @@ public:
 	virtual ~UMaterial() override = default;
 
 	EMaterialParamLayout ParamLayout = EMaterialParamLayout::None;
-	FShaderProgram* Shader;
+	FShaderProgram* Shader = nullptr;
+	EShadingModel ShadingModel = EShadingModel::Lambert;
+
+	EShadingModel GetShadingModel() const { return ShadingModel; }
+	void SetShadingModel(EShadingModel InModel);
+
 	TArray<UTexture2D*> Textures;
 	TUniquePtr<FConstantBuffer> ParamBuffer;
 	EBlendState BlendState = EBlendState::Opaque;
@@ -40,6 +48,8 @@ public:
 	ESamplerState SamplerState = ESamplerState::LinearClamp;
 
 	FVector4 BaseColor = FVector4(1, 1, 1, 1);
+	FVector SpecularColor = FVector(1.0f, 1.0f, 1.0f);
+	float Shininess = 32.0f;
 	FVector2 UVScrollSpeed = FVector2(0.0f, 0.0f);
 
 	bool bIsInstance = false;

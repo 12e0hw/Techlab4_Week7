@@ -74,9 +74,9 @@ public:
 	void DestroyWorldContext(UWorld* InWorld);
 
 	UAssetManager* AssetManager;
-protected:
 	FEngineLoop& GetEngineLoop() const { return *EngineLoop; }
 
+protected:
 	TIndirectArray<FWorldContext> WorldList;
 	//UWorld* World = nullptr;
 	int32 NextWorldContextHandle = 0;

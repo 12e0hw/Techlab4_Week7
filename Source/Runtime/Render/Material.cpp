@@ -3,6 +3,7 @@
 #include "RenderCommand.h"
 
 #include "Material.h"
+#include "RenderResourceManager.h"
 
 #include "Asset/AssetManager.h"
 #include "UObject/UObjectGlobals.h"
@@ -22,6 +23,15 @@ namespace
 	}
 }
 
+void UMaterial::SetShadingModel(EShadingModel InModel)
+{
+	ShadingModel = InModel;
+	if (ParamLayout == EMaterialParamLayout::StaticMesh || !Shader)
+	{
+		Shader = FRenderResourceManager::GetShaderProgram("Resources/Shader/StaticMeshShader.hlsl", ShadingModel);
+	}
+}
+
 UMaterial* UMaterial::CreateInstance(const UMaterial* Source)
 {
 	if (Source == nullptr)
@@ -33,11 +43,14 @@ UMaterial* UMaterial::CreateInstance(const UMaterial* Source)
 
 	Instance->ParamLayout = Source->ParamLayout;
 	Instance->Shader = Source->Shader;
+	Instance->ShadingModel = Source->ShadingModel;
 	Instance->Textures = Source->Textures;
 	Instance->BlendState = Source->BlendState;
 	Instance->DepthStencilState = Source->DepthStencilState;
 	Instance->SamplerState = Source->SamplerState;
 	Instance->BaseColor = Source->BaseColor;
+	Instance->SpecularColor = Source->SpecularColor;
+	Instance->Shininess = Source->Shininess;
 	Instance->UVScrollSpeed = Source->UVScrollSpeed;
 
 	// ParamBuffer는 TUniquePtr라 복사할 수 없다.
@@ -47,7 +60,6 @@ UMaterial* UMaterial::CreateInstance(const UMaterial* Source)
 		Instance->ParamBuffer = RenderCommand::CreateConstantBuffer(Source->ParamBuffer->GetBufferSize());
 	}
 
-	Instance->BaseColor = Source->BaseColor;
 	Instance->bIsInstance = true;
 	Instance->Parent = Source;
 
@@ -81,12 +93,15 @@ json UMaterial::SaveMaterial(const UMaterial* Material)
 	const UMaterial* Base = Material->GetBaseAsset();
 	Out["Base"] = Base ? Base->GetPath() : FString("DefaultMaterial");
 	Out["BaseColor"] = Material->BaseColor;
+	Out["SpecularColor"] = { Material->SpecularColor.X, Material->SpecularColor.Y, Material->SpecularColor.Z };
+	Out["Shininess"] = Material->Shininess;
 	Out["UVScrollSpeed"] = {
 		Material->UVScrollSpeed.X,
 		Material->UVScrollSpeed.Y
 	};
 	Out["SamplerState"] = Material->SamplerState == ESamplerState::LinearWrap ? "LinearWrap" : "LinearClamp";
 	Out["BlendState"] = Material->BlendState == EBlendState::AlphaBlend ? "AlphaBlend" : "Opaque";
+	Out["ShadingModel"] = (int)Material->ShadingModel;
 
 	json Textures = json::array();
 	for (UTexture2D* Texture : Material->Textures)
@@ -128,6 +143,15 @@ UMaterial* UMaterial::LoadMaterial(const json& In)
 	{
 		In["BaseColor"].get_to(Instance->BaseColor);
 	}
+	if (In.contains("SpecularColor"))
+	{
+		const auto& Spec = In["SpecularColor"];
+		Instance->SpecularColor = FVector(Spec[0].get<float>(), Spec[1].get<float>(), Spec[2].get<float>());
+	}
+	if (In.contains("Shininess"))
+	{
+		In["Shininess"].get_to(Instance->Shininess);
+	}
 
 	if (In.contains("Textures"))
 	{
@@ -151,6 +175,10 @@ UMaterial* UMaterial::LoadMaterial(const json& In)
 	{
 		const FString State = In["BlendState"].get<FString>();
 		Instance->BlendState = State == "AlphaBlend" ? EBlendState::AlphaBlend : EBlendState::Opaque;
+	}
+	if (In.contains("ShadingModel"))
+	{
+		Instance->SetShadingModel((EShadingModel)In["ShadingModel"].get<int>());
 	}
 
 	return Instance;
@@ -214,6 +242,8 @@ void UMaterial::Serialize(FStructuredArchive::FRecord Record)
 	FArchive& Ar = Record.GetUnderlyingArchive();
 
 	Record << SA_VALUE("BaseColor", BaseColor)
+		<< SA_VALUE("SpecularColor", SpecularColor)
+		<< SA_VALUE("Shininess", Shininess)
 		<< SA_VALUE("UVScrollSpeed", UVScrollSpeed);
 
 	// enum은 이름 문자열로 (UE 텍스트 포맷도 enum을 이름으로 쓴다)
