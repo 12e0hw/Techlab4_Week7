@@ -12,5 +12,8 @@ public:
 	UDirectionalLightComponent() = default;
 	virtual ~UDirectionalLightComponent() override = default;
 
+	FDirectionalLightInfo GetDirectionalLightInfo() const;
+	virtual FLightSceneProxy* CreateSceneProxy() override;
+
 private:
 };

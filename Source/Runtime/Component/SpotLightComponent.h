@@ -17,6 +17,9 @@ public:
 	float GetInnerConeAngle() const { return InnerConeAngle; }
 	float GetOuterConeAngle() const { return OuterConeAngle; }
 
+	FSpotLightInfo GetSpotLightInfo() const;
+	virtual FLightSceneProxy* CreateSceneProxy() override;
+
 	virtual void PostEditChangeProperty(const FProperty& Property) override;
 
 protected:

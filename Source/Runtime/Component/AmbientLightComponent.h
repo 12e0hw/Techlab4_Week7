@@ -9,5 +9,8 @@ class UAmbientLightComponent : public ULightComponentBase
 public:
 	UAmbientLightComponent() = default;
 	virtual ~UAmbientLightComponent() override = default;
+
+	FAmbientLightInfo GetAmbientLightInfo() const;
+	virtual FLightSceneProxy* CreateSceneProxy() override;
 private:
 };

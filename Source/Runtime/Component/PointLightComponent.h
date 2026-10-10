@@ -15,6 +15,9 @@ public:
 
 	float GetAttenuationRadius() const { return AttenuationRadius; }
 
+	FPointLightInfo GetPointLightInfo() const;
+	virtual FLightSceneProxy* CreateSceneProxy() override;
+
 	virtual void PostEditChangeProperty(const FProperty& Property) override;
 
 protected:
