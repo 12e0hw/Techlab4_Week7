@@ -67,9 +67,11 @@ void FGizmoRenderer::OnRender(
 	const int HoveredAxis = Gizmo.GetHoveredAxis();
 
 	const FVector GizmoLocation = Gizmo.GetRenderLocationForView(CameraLocation, bCameraOrthographic);
+	const float GizmoScale = Gizmo.GetRenderScaleForView(ViewProj, bCameraOrthographic);
 	// 축 3개
 	RenderCommand::BindMesh(AxisMesh);
 	Transform.Location = GizmoLocation;
+	Transform.Scale = FVector(GizmoScale, GizmoScale, GizmoScale);
 
 	for (int i = 0; i < 3; ++i)
 	{
@@ -77,10 +79,12 @@ void FGizmoRenderer::OnRender(
 
 		if (Gizmo.GetMode() == EGizmoMode::Scale || Gizmo.GetSpace() == EGizmoSpace::Local)
 		{
+			FMatrix Scale = FMatrix::Identity;
+			Scale.M[0][0] = Scale.M[1][1] = Scale.M[2][2] = GizmoScale;
 			FMatrix AxisRot = AxisDataArray[i].Rotator.Quaternion().ToFMatrix();
 			FMatrix ObjRot = Gizmo.GetRotation().Quaternion().ToFMatrix();
 			FMatrix Trans = FMatrix::MakeTranslation(GizmoLocation);
-			World = AxisRot * ObjRot * Trans;
+			World = Scale * AxisRot * ObjRot * Trans;
 		}
 		else
 		{
@@ -125,7 +129,7 @@ void FGizmoRenderer::OnRender(
 		Rot.M[2][0] = Forward.X; Rot.M[2][1] = Forward.Y; Rot.M[2][2] = Forward.Z;
 
 		FMatrix Scale = FMatrix::Identity;
-		Scale.M[0][0] = Scale.M[1][1] = Scale.M[2][2] = 1.3f;
+		Scale.M[0][0] = Scale.M[1][1] = Scale.M[2][2] = 1.3f * GizmoScale;
 
 		FMatrix Trans = FMatrix::MakeTranslation(GizmoLocation);
 

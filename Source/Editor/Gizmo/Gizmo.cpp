@@ -17,11 +17,17 @@ static const int AXIS_SCREEN = 6;   // 3축 자유 이동
 static const float AxisLength = 1.5f;
 static const float HitPixels = 12.0f;
 
+// 원근 View에서는 기즈모를 카메라 앞 이 거리에 그려 화면 크기를 고정한다.
+static const float PerspectiveGizmoDistance = 10.0f;
+// 직교 View 높이에 대한 기즈모 크기 비율. 원근 FOV 60도에서 위 거리로 그린 크기와 같게 맞춘다 (tan 30도 = 0.57735).
+static const float OrthoGizmoViewHeightRatio = 1.0f / (2.0f * PerspectiveGizmoDistance * 0.57735027f);
+
 // 입력 View의 카메라 조건으로 축 선택과 드래그를 갱신한다.
 void FGizmo::Update(const FRay& MouseRay, const FVector2& MousePos, const FMatrix& ViewProj, int ScreenW, int ScreenH, bool bMouseDown, const FVector& CameraLocation, const bool bCameraOrthographic)
 {
 	ViewCameraLocation = CameraLocation;
 	bViewCameraOrthographic = bCameraOrthographic;
+	ViewRenderScale = GetRenderScaleForView(ViewProj, bCameraOrthographic);
 
 	if (!Target) // 만약 현재 타겟이 없다면 
 	{
@@ -72,7 +78,7 @@ int FGizmo::PickLinearAxis(const FVector2& MousePos, const FMatrix& ViewProj, in
 	for (int i = 0; i < 3; ++i)
 	{
 		FVector2 Start = WorldToScreen(Origin, ViewProj, ScreenW, ScreenH);
-		FVector2 End = WorldToScreen(Origin + GetAxisDirection(i) * AxisLength, ViewProj, ScreenW, ScreenH);
+		FVector2 End = WorldToScreen(Origin + GetAxisDirection(i) * (AxisLength * ViewRenderScale), ViewProj, ScreenW, ScreenH);
 
 		float Dist = DistanceToSegment(MousePos, Start, End);
 		if (Dist < BestDist)
@@ -89,6 +95,7 @@ int FGizmo::PickRotationAxis(const FVector2& MousePos, const FMatrix& ViewProj, 
 {
 	const FVector Origin = GetRenderLocation();
 	const int Segments = 32;
+	const float AxisRingRadius = RingRadius * ViewRenderScale;
 
 	int Best = -1;
 	float BestDist = HitPixels;
@@ -105,8 +112,8 @@ int FGizmo::PickRotationAxis(const FVector2& MousePos, const FMatrix& ViewProj, 
 		{
 			float theta = (float)s / Segments * 2.0f * PI;
 			FVector worldPos = Origin
-				+ u * (RingRadius * cosf(theta))
-				+ v * (RingRadius * sinf(theta));
+				+ u * (AxisRingRadius * cosf(theta))
+				+ v * (AxisRingRadius * sinf(theta));
 
 			FVector2 screenPos = WorldToScreen(worldPos, ViewProj, ScreenW, ScreenH);
 
@@ -130,7 +137,7 @@ int FGizmo::PickRotationAxis(const FVector2& MousePos, const FMatrix& ViewProj, 
 	FVector u = FVector(0, 0, 1).Cross(Forward).Normalized();
 	FVector v = Forward.Cross(u);
 
-	const float ScreenRingRadius = RingRadius * 1.3f;  
+	const float ScreenRingRadius = RingRadius * 1.3f * ViewRenderScale;
 
 	FVector2 prev;
 	bool bHasPrev = false;
@@ -259,7 +266,8 @@ void FGizmo::UpdateDrag(const FRay& MouseRay, const FVector2& MousePos)
 		Target->SetRelativeLocation(DragStartLocation + DragAxisDirection * amount);
 	else   // Scale
 	{
-		float factor = 1.0f + amount;
+		// 기즈모 크기 기준으로 나눠 직교 줌과 상관없이 같은 화면 드래그에 같은 배율이 되게 한다.
+		float factor = 1.0f + amount / ViewRenderScale;
 		if (factor < 0.01f) factor = 0.01f;
 
 		FVector NewScale = DragStartScale;
@@ -345,8 +353,23 @@ FVector FGizmo::GetRenderLocationForView(const FVector& CameraLocation, const bo
 
 	if (bCameraOrthographic) return PivotLocation;
 
-	return (PivotLocation - CameraLocation).Normalized() * 10.0f + CameraLocation;
+	return (PivotLocation - CameraLocation).Normalized() * PerspectiveGizmoDistance + CameraLocation;
 
+}
+
+float FGizmo::GetRenderScaleForView(const FMatrix& ViewProj, const bool bCameraOrthographic) const
+{
+	if (!bCameraOrthographic) return 1.0f;
+
+	// 행 벡터 규약(v * VP)에서 Y 열은 월드 1유닛당 NDC Y 변화량이고, 직교에서는 그 길이가 2 / View 높이다.
+	const float NdcPerUnitY = sqrtf(
+		ViewProj.M[0][1] * ViewProj.M[0][1] +
+		ViewProj.M[1][1] * ViewProj.M[1][1] +
+		ViewProj.M[2][1] * ViewProj.M[2][1]);
+	if (NdcPerUnitY <= 1.0e-8f) return 1.0f;
+
+	const float ViewHeight = 2.0f / NdcPerUnitY;
+	return ViewHeight * OrthoGizmoViewHeightRatio;
 }
 
 // 현재 입력 View의 카메라 위치를 반환한다.

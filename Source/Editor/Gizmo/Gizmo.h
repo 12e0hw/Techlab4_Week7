@@ -65,6 +65,8 @@ public:
 	FVector GetRenderLocation() const;
 	// 원근 View에서만 카메라 거리에 맞춰 크기 보정 위치를 구하고 직교 View는 월드 위치를 유지한다.
 	FVector GetRenderLocationForView(const FVector& CameraLocation, bool bCameraOrthographic) const;
+	// 직교 View는 줌과 상관없이 화면 크기가 같도록 View 높이에 비례한 배율을 구한다. 원근은 위치로 보정하므로 1이다.
+	float GetRenderScaleForView(const FMatrix& ViewProj, bool bCameraOrthographic) const;
 	FVector GetCameraLocation() const;
 	FVector GetAxisDirection(int Axis) const;
 private:
@@ -89,6 +91,7 @@ private:
 
 	FVector ViewCameraLocation{};
 	bool bViewCameraOrthographic = false;
+	float ViewRenderScale = 1.0f;
 
 	float DragStartAngle;
 	float RingRadius = 1.0f;
