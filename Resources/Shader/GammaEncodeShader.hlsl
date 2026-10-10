@@ -1,0 +1,37 @@
+// Linear 씬 컬러(float)를 화면 표시용 sRGB(8비트)로 인코딩한다.
+// 라이팅·블렌딩·안개는 모두 Linear에서 계산하고, 화면에 내보내기 직전에 한 번만 감마를 적용한다.
+Texture2D SceneColor : register(t0);
+
+struct PSInput
+{
+    float4 Position : SV_POSITION;
+};
+
+// 정점 버퍼 없이 화면을 덮는 삼각형 하나를 만든다.
+PSInput mainVS(uint VertexID : SV_VertexID)
+{
+    PSInput Output;
+    float2 UV = float2((VertexID << 1) & 2, VertexID & 2); // (0,0) (2,0) (0,2)
+    Output.Position = float4(UV * float2(2.0f, -2.0f) + float2(-1.0f, 1.0f), 0.0f, 1.0f);
+    return Output;
+}
+
+// sRGB 표준 전달 함수 (IEC 61966-2-1). Math/Color.h의 LinearToSRGB와 같은 식이다.
+float3 LinearToSRGB(float3 L)
+{
+    float3 Low = L * 12.92f;
+    float3 High = 1.055f * pow(L, 1.0f / 2.4f) - 0.055f;
+    return lerp(High, Low, step(L, 0.0031308f));
+}
+
+float4 mainPS(PSInput Input) : SV_TARGET
+{
+    // 입력과 출력 크기가 같으므로 샘플러 없이 같은 픽셀을 그대로 읽는다.
+    float3 Linear = SceneColor.Load(int3(Input.Position.xy, 0)).rgb;
+
+    // 톤매핑이 없으므로 1을 넘는 HDR 값은 잘라낸다.
+    float3 Encoded = LinearToSRGB(saturate(Linear));
+
+    // 뷰포트 텍스처를 ImGui가 알파 블렌딩으로 그리므로 최종 출력은 불투명으로 고정한다.
+    return float4(Encoded, 1.0f);
+}

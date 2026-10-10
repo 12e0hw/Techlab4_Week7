@@ -27,6 +27,9 @@ bool FSkyboxRenderer::Init(const FString& PanoramaPath)
 	Desc.MipLevels = 1;
 	Desc.ArraySize = 1;
 	Desc.Format = Image.Format;          // .hdr이면 R32G32B32A32_FLOAT
+	// .jpg·.png 파노라마는 sRGB로 저장돼 있으므로 샘플링할 때 Linear로 디코딩한다
+	if (Desc.Format == DXGI_FORMAT_R8G8B8A8_UNORM)
+		Desc.Format = DXGI_FORMAT_R8G8B8A8_UNORM_SRGB;
 	Desc.SampleDesc.Count = 1;
 	Desc.Usage = D3D11_USAGE_IMMUTABLE;
 	Desc.BindFlags = D3D11_BIND_SHADER_RESOURCE;

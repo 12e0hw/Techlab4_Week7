@@ -314,7 +314,7 @@ void UAssetManager::RegisterAsset(const FString& Key, URenderAsset* Asset)
 	AssetMap[Key] = Asset;
 }
 
-UTexture2D* UAssetManager::LoadTexture(const FString& InPath, bool bGenerateMips)
+UTexture2D* UAssetManager::LoadTexture(const FString& InPath, bool bGenerateMips, bool bSRGB)
 {
 	if (URenderAsset** Found = AssetMap.Find(InPath))
 	{
@@ -329,6 +329,9 @@ UTexture2D* UAssetManager::LoadTexture(const FString& InPath, bool bGenerateMips
 	Desc.Height = Data.Height;
 	Desc.ArraySize = 1;
 	Desc.Format = Data.Format;              // 로더가 정한 포맷 (.hdr이면 float)
+	// 8비트 이미지 파일은 sRGB로 저장돼 있다. .hdr(float)은 이미 Linear라 그대로 둔다.
+	if (bSRGB && Desc.Format == DXGI_FORMAT_R8G8B8A8_UNORM)
+		Desc.Format = DXGI_FORMAT_R8G8B8A8_UNORM_SRGB;
 	Desc.SampleDesc.Count = 1;
 	Desc.MipLevels = bGenerateMips ? 0 : 1;
 	Desc.Usage = bGenerateMips ? D3D11_USAGE_DEFAULT : D3D11_USAGE_IMMUTABLE;
@@ -360,7 +363,8 @@ UFont* UAssetManager::LoadFontAtlas(const FString& JsonPath, const FString& Atla
 		return nullptr;
 	}
 
-	Font->AtlasTexture = LoadTexture(AtlasTexturePath, false);
+	// 폰트 아틀라스는 글자 커버리지 데이터라 감마 디코딩하지 않는다
+	Font->AtlasTexture = LoadTexture(AtlasTexturePath, false, false);
 	if (!Font->AtlasTexture)
 	{
 		return nullptr;

@@ -13,6 +13,7 @@
 #include "Render/LineBatcher.h"
 #include "Render/FogRenderer.h"
 #include "Render/FXAARenderer.h"
+#include "Render/GammaEncodeRenderer.h"
 #include "Render/DepthViewRenderer.h"
 
 
@@ -51,7 +52,8 @@ public:
 	// Active View의 입력과 Picking 결과만 Gizmo 및 선택 상태에 반영한다.
 	void UpdateGizmoAndPicking();
 	// View 하나의 Scene·Grid·Gizmo·텍스트를 해당 ViewProjection으로 렌더한다.
-	void RenderFrame(int32 ViewIndex, UWorld& ViewWorld, const FRenderingInfo& ViewRenderingInfo, const FMatrix& ViewProjection, const FVector& ViewCameraLocation, const FVector& ViewCameraForward, FRenderQueue& RenderQueue);
+	// 씬은 SceneRenderingInfo(Linear float)에 그리고, 인코딩한 결과와 에디터 표시는 ViewRenderingInfo(sRGB)에 그린다.
+	void RenderFrame(int32 ViewIndex, UWorld& ViewWorld, const FRenderingInfo& SceneRenderingInfo, const FRenderingInfo& ViewRenderingInfo, const FMatrix& ViewProjection, const FVector& ViewCameraLocation, const FVector& ViewCameraForward, FRenderQueue& RenderQueue);
 	// 네 View 결과와 ImGui를 메인 Swapchain 백버퍼에 합성한다. Present는 FEngineLoop가 한다.
 	void PresentFrame();
 	void DeleteActor(AActor* Actor);
@@ -107,6 +109,8 @@ private:
 	void RenderFogPass(const int32 ViewIndex, UWorld& ViewWorld, const FRenderingInfo& ViewRenderingInfo, const FVector& ViewCameraLocation,const FMatrix& ViewProjection, FRenderQueue& RenderQueue);
 	//Overlay Pass
 	void RenderOverlayPass(const int32 ViewIndex, UWorld& ViewWorld, const FRenderingInfo& ViewRenderingInfo, const FMatrix& ViewProjection, const FVector& ViewCameraLocation, const FVector& ViewCameraForward, FRenderQueue& RenderQueue);
+	//Gamma Encode Pass: Linear 씬 컬러를 화면 표시용 sRGB로 인코딩한다
+	void RenderGammaEncodePass(const FRenderingInfo& SceneRenderingInfo, const FRenderingInfo& ViewRenderingInfo);
 	//FXAA Pass
 	void RenderFXAAPass(const int32 ViewIndex, const FRenderingInfo& ViewRenderingInfo);
 	//Depth Pass
@@ -140,6 +144,7 @@ private:
 	TUniquePtr<FOutlineRenderer> OutlineRenderer;
 	TUniquePtr<FSkyboxRenderer> SkyboxRenderer;
 	TUniquePtr<FFXAARenderer> FXAARenderer;
+	TUniquePtr<FGammaEncodeRenderer> GammaEncodeRenderer;
 	TUniquePtr<FDepthViewRenderer> DepthViewRenderer;
 
 	UFont* SystemFont;
@@ -166,9 +171,11 @@ private:
 	// New Editor Window(PIE) 모드에서만 존재한다. Swapchain이 창 핸들을 쓰므로 창보다 먼저 해제한다.
 	TUniquePtr<FWindow> PIEWindow;
 	TUniquePtr<FSwapchain> PIESwapchain;
+	TUniquePtr<FTexture2D> PIESceneColorTarget;
 	TUniquePtr<FTexture2D> PIEColorTarget;
 	TUniquePtr<FTexture2D> PIEDepthTarget;
 	TUniquePtr<FTexture2D> PIEFxaaTarget;
+	FRenderingInfo PIESceneRenderingInfo{};
 	FRenderingInfo PIERenderingInfo{};
 	uint32 PIETargetWidth = 0;
 	uint32 PIETargetHeight = 0;

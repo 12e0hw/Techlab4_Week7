@@ -21,6 +21,28 @@
 
 namespace
 {
+	// Linear로 저장된 색을 ImGui 색상 선택기로 편집한다.
+	// 선택기는 값을 그대로 화면에 그려 sRGB로 보이므로, 보여줄 때 sRGB로 인코딩하고 고른 값은 Linear로 디코딩해 저장한다.
+	// (언리얼 색상 선택기와 같은 방식. 알파는 색이 아니라 비율이라 변환하지 않는다)
+	bool ColorEditLinear(const char* Label, float InOutLinear[4], ImGuiColorEditFlags Flags = 0)
+	{
+		float Display[4] = {
+			FLinearColor::LinearToSRGB(InOutLinear[0]),
+			FLinearColor::LinearToSRGB(InOutLinear[1]),
+			FLinearColor::LinearToSRGB(InOutLinear[2]),
+			InOutLinear[3]
+		};
+
+		if (!ImGui::ColorEdit4(Label, Display, Flags))
+			return false;
+
+		InOutLinear[0] = FLinearColor::SRGBToLinear(Display[0]);
+		InOutLinear[1] = FLinearColor::SRGBToLinear(Display[1]);
+		InOutLinear[2] = FLinearColor::SRGBToLinear(Display[2]);
+		InOutLinear[3] = Display[3];
+		return true;
+	}
+
 	bool DrawAxisControl(const FString& _label, float& _value, float _speed, float _minValue, float _maxValue, float _resetValue, FVector4 _color)
 	{
 		bool isValueChanged = false;
@@ -135,7 +157,7 @@ namespace
 		if (Texture && Texture->GetResource())
 		{
 			ImGui::Image(
-				(ImTextureID)Texture->GetResource()->GetSRV(),
+				(ImTextureID)Texture->GetResource()->GetRawSRV(),
 				{ ThumbnailSize, ThumbnailSize });
 		}
 		else
@@ -379,7 +401,7 @@ namespace
 					// 1: 텍스처 썸네일
 					if (Texture && Texture->GetResource())
 					{
-						ImGui::Image((ImTextureID)Texture->GetResource()->GetSRV(), { ThumbnailSize, ThumbnailSize });
+						ImGui::Image((ImTextureID)Texture->GetResource()->GetRawSRV(), { ThumbnailSize, ThumbnailSize });
 						if (ImGui::IsItemHovered())
 						{
 							ImGui::SetTooltip("%s", Texture->GetPath().c_str());
@@ -437,8 +459,9 @@ namespace
 					ImGui::TableSetColumnIndex(1);
 					ImGui::SetNextItemWidth(-1.0f);
 
+					// BaseColor는 셰이더가 Linear로 쓰므로 선택기에서 sRGB로 보여주고 Linear로 저장한다
 					FVector4 TempColor = Effective ? Effective->BaseColor : FVector4(1.0f, 1.0f, 1.0f, 1.0f);
-					if (ImGui::ColorEdit4("##BaseColor", &TempColor.X))
+					if (ColorEditLinear("##BaseColor", &TempColor.X))
 					{
 						Override = EnsureMaterialOverride(MeshComponent, Slot, Effective, Override);
 						if (Override)
@@ -602,7 +625,7 @@ namespace
 		{
 			// 1을 넘는 HDR 값도 편집할 수 있게 한다
 			FLinearColor* Value = static_cast<FLinearColor*>(ValuePtr);
-			bChanged = ImGui::ColorEdit4(Label.c_str(), &Value->R, ImGuiColorEditFlags_Float | ImGuiColorEditFlags_HDR);
+			bChanged = ColorEditLinear(Label.c_str(), &Value->R, ImGuiColorEditFlags_Float | ImGuiColorEditFlags_HDR);
 			break;
 		}
 		case EPropertyType::String:

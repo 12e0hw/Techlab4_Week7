@@ -58,7 +58,9 @@ public:
 	//UStaticMesh* GetMesh(FString InName);
 	//UStaticMesh* GetMesh(EPrimitiveType Type); // 오버로드(수정 중)
 
-	UTexture2D* LoadTexture(const FString& InPath, bool bGenerateMips = true);
+	// bSRGB: 8비트 컬러 텍스처를 sRGB로 보고 샘플링할 때 Linear로 디코딩한다 (언리얼 텍스처의 sRGB 옵션).
+	// 노멀맵·마스크·폰트 커버리지처럼 값 자체가 데이터인 텍스처는 false로 읽는다.
+	UTexture2D* LoadTexture(const FString& InPath, bool bGenerateMips = true, bool bSRGB = true);
 	UFont* LoadFontAtlas(const FString& JsonPath, const FString& AtlasTexturePath);
 	static UStaticMesh* LoadObjStaticMesh(const FString& Path);
 

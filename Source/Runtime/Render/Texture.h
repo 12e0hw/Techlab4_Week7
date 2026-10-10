@@ -27,7 +27,10 @@ public:
 	ETextureDimension GetDimension() const { return Dimension; }
 
 	ID3D11Resource* GetRawPtr() const { return Texture.Get(); }
+	// sRGB 텍스처는 샘플링할 때 Linear로 디코딩된다. 셰이더 계산(씬 렌더링)에 쓴다.
 	ID3D11ShaderResourceView* GetSRV() const { return SRV.Get(); }
+	// 저장된 값을 감마 변환 없이 읽는다. ImGui처럼 Linear 파이프라인 밖에서 그릴 때 쓴다. sRGB 텍스처가 아니면 GetSRV와 같다.
+	ID3D11ShaderResourceView* GetRawSRV() const { return RawSRV ? RawSRV.Get() : SRV.Get(); }
 	ID3D11RenderTargetView* GetRTV() const { return RTV.Get(); }
 	ID3D11DepthStencilView* GetDSV() const { return DSV.Get(); }
 protected:
@@ -42,6 +45,7 @@ protected:
 
 	ComPtr<ID3D11Resource> Texture;
 	ComPtr<ID3D11ShaderResourceView> SRV;
+	ComPtr<ID3D11ShaderResourceView> RawSRV;
 	ComPtr<ID3D11RenderTargetView> RTV;
 	ComPtr<ID3D11DepthStencilView> DSV;
 

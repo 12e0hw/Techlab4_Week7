@@ -58,7 +58,7 @@ namespace EditorCommandUI
 		if (Command.Icon)
 		{
 			// 비활성일 때는 BeginDisabled가 알파를 낮춰 준다.
-			bClicked = ImGui::ImageButton(Id, (ImTextureID)Command.Icon->GetResource()->GetSRV(),
+			bClicked = ImGui::ImageButton(Id, (ImTextureID)Command.Icon->GetResource()->GetRawSRV(),
 				{ IconSize, IconSize }, { 0, 0 }, { 1, 1 }, { 0, 0, 0, 0 }, Command.IconTint);
 		}
 		else

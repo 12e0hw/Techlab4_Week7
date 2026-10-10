@@ -5,6 +5,7 @@
 #include "Core/StatOverlay.h"
 #include "Core/Stats/LightweightStats.h"
 #include "Render/RenderCommand.h"
+#include "Math/Color.h"
 
 #include <algorithm>
 #include <cassert>
@@ -62,6 +63,12 @@ const FRenderingInfo& FViewportsPanel::GetRenderingInfo(const int32 ViewIndex) c
 {
 	assert(ViewIndex >= 0 && ViewIndex < 4);
 	return Slots[ViewIndex].RenderingInfo;
+}
+
+const FRenderingInfo& FViewportsPanel::GetSceneRenderingInfo(const int32 ViewIndex) const
+{
+	assert(ViewIndex >= 0 && ViewIndex < 4);
+	return Slots[ViewIndex].SceneRenderingInfo;
 }
 
 FTexture2D* FViewportsPanel::GetFxaaTarget(const int32 ViewIndex) const
@@ -452,6 +459,10 @@ void FViewportsPanel::ResizeSlot(FViewSlot& Slot, const uint32 Width, const uint
 	// CopyResource로 되돌려 쓰므로 ColorTarget과 같은 Desc로 만든다
 	Slot.FxaaTarget = RenderCommand::CreateTexture2D(Desc);
 
+	// Linear 값을 8비트에 담으면 어두운 영역이 뭉개지고 1을 넘는 값이 잘리므로 씬 컬러는 float로 만든다
+	Desc.Format = DXGI_FORMAT_R16G16B16A16_FLOAT;
+	Slot.SceneColorTarget = RenderCommand::CreateTexture2D(Desc);
+
 	// Fog 패스가 깊이를 셰이더에서 읽으므로 DSV와 SRV를 둘 다 만들 수 있는 TYPELESS로 만든다
 	Desc.Format = DXGI_FORMAT_R24G8_TYPELESS;
 	Desc.BindFlags = D3D11_BIND_DEPTH_STENCIL | D3D11_BIND_SHADER_RESOURCE;
@@ -459,11 +470,29 @@ void FViewportsPanel::ResizeSlot(FViewSlot& Slot, const uint32 Width, const uint
 
 	Slot.Width = Width;
 	Slot.Height = Height;
-	Slot.RenderingInfo.ColorRenderTargets.Reset();
-	Slot.RenderingInfo.ViewportSetting.Width = Width;
-	Slot.RenderingInfo.ViewportSetting.Height = Height;
-	FRenderingDesc ColorDesc{};
-	ColorDesc.Texture = Slot.ColorTarget.get();
-	Slot.RenderingInfo.ColorRenderTargets.Add(ColorDesc);
-	Slot.RenderingInfo.DepthStencil.Texture = Slot.DepthTarget.get();
+	BuildViewRenderingInfos(Slot.SceneRenderingInfo, Slot.RenderingInfo,
+		Slot.SceneColorTarget.get(), Slot.ColorTarget.get(), Slot.DepthTarget.get(), Width, Height);
+}
+
+void FViewportsPanel::BuildViewRenderingInfos(FRenderingInfo& OutSceneInfo, FRenderingInfo& OutViewInfo,
+	FTexture2D* SceneColor, FTexture2D* ViewColor, FTexture2D* Depth, const uint32 Width, const uint32 Height)
+{
+	OutSceneInfo.ColorRenderTargets.Reset();
+	OutSceneInfo.ViewportSetting.Width = Width;
+	OutSceneInfo.ViewportSetting.Height = Height;
+	FRenderingDesc SceneColorDesc{};
+	SceneColorDesc.Texture = SceneColor;
+	// 지우기 색은 Linear 공간 값이다. 인코딩 후 예전과 같은 회색(sRGB 0.3)이 되도록 디코딩해 둔다.
+	const float ClearLinear = FLinearColor::SRGBToLinear(0.3f);
+	SceneColorDesc.ClearValue.ColorClearValue = FVector4(ClearLinear, ClearLinear, ClearLinear, 1.0f);
+	OutSceneInfo.ColorRenderTargets.Add(SceneColorDesc);
+	OutSceneInfo.DepthStencil.Texture = Depth;
+
+	OutViewInfo.ColorRenderTargets.Reset();
+	OutViewInfo.ViewportSetting.Width = Width;
+	OutViewInfo.ViewportSetting.Height = Height;
+	FRenderingDesc ViewColorDesc{};
+	ViewColorDesc.Texture = ViewColor;
+	OutViewInfo.ColorRenderTargets.Add(ViewColorDesc);
+	OutViewInfo.DepthStencil.Texture = Depth;
 }

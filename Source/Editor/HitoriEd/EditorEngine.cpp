@@ -110,6 +110,9 @@ bool UEditorEngine::Init()
 	FXAARenderer = MakeUnique<FFXAARenderer>();
 	FXAARenderer->Init();
 
+	GammaEncodeRenderer = MakeUnique<FGammaEncodeRenderer>();
+	GammaEncodeRenderer->Init();
+
 	DepthViewRenderer = MakeUnique<FDepthViewRenderer>();
 	DepthViewRenderer->Init();
 
@@ -425,6 +428,7 @@ void UEditorEngine::RenderMultipleViewports()
 		RenderFrame(
 			ViewIndex,
 			*ViewWorld,
+			ViewportsPanel->GetSceneRenderingInfo(ViewIndex),
 			ViewportsPanel->GetRenderingInfo(ViewIndex),
 			MultipleViewportsAdapter.GetEngineViewProjection(ViewIndex),
 			MultipleViewportsAdapter.GetEngineCameraLocation(ViewIndex),
@@ -454,6 +458,7 @@ void UEditorEngine::RenderMultipleViewports()
 		RenderFrame(
 			PIEViewIndex,
 			*ViewWorld,
+			PIESceneRenderingInfo,
 			PIERenderingInfo,
 			MultipleViewportsAdapter.GetEngineViewProjection(PIEViewIndex),
 			MultipleViewportsAdapter.GetEngineCameraLocation(PIEViewIndex),
@@ -840,35 +845,58 @@ void UEditorEngine::UpdateGizmoAndPicking()
 }
 
 // View 행렬로 Scene·Grid·Gizmo·텍스트·Outline을 렌더한다.
-void UEditorEngine::RenderFrame(const int32 ViewIndex, UWorld& ViewWorld, const FRenderingInfo& ViewRenderingInfo, const FMatrix& ViewProjection, const FVector& ViewCameraLocation, const FVector& ViewCameraForward, FRenderQueue& RenderQueue)
+void UEditorEngine::RenderFrame(const int32 ViewIndex, UWorld& ViewWorld, const FRenderingInfo& SceneRenderingInfo, const FRenderingInfo& ViewRenderingInfo, const FMatrix& ViewProjection, const FVector& ViewCameraLocation, const FVector& ViewCameraForward, FRenderQueue& RenderQueue)
 {
-	// 1. 불투명 Pass
-	RenderOpaquePass(ViewIndex, ViewRenderingInfo, ViewProjection, ViewCameraLocation, ViewCameraForward, RenderQueue);
+	// 1. 불투명·반투명 Pass (Linear 씬 컬러)
+	RenderOpaquePass(ViewIndex, SceneRenderingInfo, ViewProjection, ViewCameraLocation, ViewCameraForward, RenderQueue);
 
 	if (SettingsPanel->GetSettings().bDepthView)
 	{
+		// 깊이 시각화는 표시용 타깃을 통째로 덮어쓰므로 인코딩이 필요 없다
 		RenderDepthPass(ViewIndex, ViewRenderingInfo, ViewProjection, ViewCameraLocation, ViewCameraForward);
-
-
 	}
 	else
 	{
 		//직교인 경우 안개 Pass를 그리지 않는다.
 		if (!MultipleViewportsAdapter.IsOrthographic(ViewIndex) && SettingsPanel->GetSettings().bExponentialHeightFog)
-			// 2. 안개 Pass
-			RenderFogPass(ViewIndex, ViewWorld, ViewRenderingInfo, ViewCameraLocation, ViewProjection, RenderQueue);
+			// 2. 안개 Pass (Linear 씬 컬러)
+			RenderFogPass(ViewIndex, ViewWorld, SceneRenderingInfo, ViewCameraLocation, ViewProjection, RenderQueue);
 
-		// 3. FXAA Pass
+		// 3. Gamma Encode Pass: Linear 씬 컬러 → 표시용 sRGB
+		RenderGammaEncodePass(SceneRenderingInfo, ViewRenderingInfo);
+
+		// 4. FXAA Pass: 밝기 계산이 감마 공간을 전제로 하므로 인코딩 뒤에 한다
 		if (SettingsPanel->GetSettings().bEnableFXAA)
 			RenderFXAAPass(ViewIndex, ViewRenderingInfo);
 	}
 
-
-
-	// 4. 오버레이 Pass
+	// 5. 오버레이 Pass: Grid·Gizmo·UUID는 sRGB 색으로 지정되므로 인코딩 뒤 표시용 타깃에 그린다
 	RenderOverlayPass(ViewIndex, ViewWorld, ViewRenderingInfo, ViewProjection, ViewCameraLocation, ViewCameraForward, RenderQueue);
+}
 
+void UEditorEngine::RenderGammaEncodePass(const FRenderingInfo& SceneRenderingInfo, const FRenderingInfo& ViewRenderingInfo)
+{
+	FTexture2D* SceneColor = SceneRenderingInfo.ColorRenderTargets[0].Texture;
+	FTexture2D* ViewColor = ViewRenderingInfo.ColorRenderTargets[0].Texture;
+	if (!SceneColor || !ViewColor)
+		return;
 
+	// 출력은 표시용 타깃 전체를 덮어쓰므로 Clear·깊이가 필요 없다
+	FRenderingInfo PassInfo;
+	PassInfo.ViewportSetting = ViewRenderingInfo.ViewportSetting;
+
+	FRenderingDesc ColorDesc{};
+	ColorDesc.Texture = ViewColor;
+	ColorDesc.LoadOp = ERenderTargetLoadOp::DontCare;
+	PassInfo.ColorRenderTargets.Add(ColorDesc);
+	PassInfo.DepthStencil.Texture = nullptr;
+
+	RenderCommand::BeginRenderPass(PassInfo);
+	GammaEncodeRenderer->OnRender(SceneColor);
+	RenderCommand::EndRenderPass(PassInfo);
+
+	// 다음 프레임에 SceneColor를 RTV로 쓸 때 SRV로 남아 있으면 D3D가 강제로 해제하므로 먼저 비운다
+	RenderCommand::UnbindShaderResource(0, EShaderBindFlagBits::Pixel);
 }
 
 
@@ -1002,7 +1030,9 @@ void UEditorEngine::DestroyPIEWindow()
 	MultipleViewportsAdapter.SetExternalViewSize(0, 0);
 	MultipleViewportsAdapter.ClearViewCameraOverride(FMultipleViewportsAdapter::ExternalViewIndex);
 
+	PIESceneRenderingInfo = {};
 	PIERenderingInfo = {};
+	PIESceneColorTarget.reset();
 	PIEColorTarget.reset();
 	PIEDepthTarget.reset();
 	PIEFxaaTarget.reset();
@@ -1048,17 +1078,15 @@ bool UEditorEngine::UpdatePIEWindowTargets()
 		PIEColorTarget = RenderCommand::CreateTexture2D(Desc);
 		PIEFxaaTarget = RenderCommand::CreateTexture2D(Desc);
 
+		Desc.Format = DXGI_FORMAT_R16G16B16A16_FLOAT;
+		PIESceneColorTarget = RenderCommand::CreateTexture2D(Desc);
+
 		Desc.Format = DXGI_FORMAT_R24G8_TYPELESS;
 		Desc.BindFlags = D3D11_BIND_DEPTH_STENCIL | D3D11_BIND_SHADER_RESOURCE;
 		PIEDepthTarget = RenderCommand::CreateTexture2D(Desc);
 
-		PIERenderingInfo.ColorRenderTargets.Reset();
-		PIERenderingInfo.ViewportSetting.Width = Width;
-		PIERenderingInfo.ViewportSetting.Height = Height;
-		FRenderingDesc ColorDesc{};
-		ColorDesc.Texture = PIEColorTarget.get();
-		PIERenderingInfo.ColorRenderTargets.Add(ColorDesc);
-		PIERenderingInfo.DepthStencil.Texture = PIEDepthTarget.get();
+		FViewportsPanel::BuildViewRenderingInfos(PIESceneRenderingInfo, PIERenderingInfo,
+			PIESceneColorTarget.get(), PIEColorTarget.get(), PIEDepthTarget.get(), Width, Height);
 
 		PIETargetWidth = Width;
 		PIETargetHeight = Height;
