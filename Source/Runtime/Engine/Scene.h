@@ -6,17 +6,16 @@
 #include "Math/Frustum.h"
 #include "Math/BVH.h"
 #include "Render/FogInfo.h"
+#include "Render/LightInfo.h"
 #include "Render/Renderer.h"
+
+class FLightSceneProxy;
+class ULightComponentBase;
 
 struct FExponentialHeightFogSceneInfo
 {
 	uint32 Id;
 	FFogInfo FogInfo;
-};
-
-struct FLightSceneInfo
-{
-
 };
 
 class FScene
@@ -32,7 +31,12 @@ public:
 	void RemoveAllFogInfo();
 	void UpdateFogInfo(uint32 Id, const FFogInfo& FogInfo);
 
-
+	void AddLight(ULightComponentBase* Component);
+	void RemoveLight(ULightComponentBase* Component);
+	void RemoveAllLights();
+	void MarkLightDirty(FLightSceneProxy* Proxy);
+	// Ambient·Directional은 마지막으로 등록된 것 하나, Point·Spot은 MaxPointLights·MaxSpotLights개까지 담는다.
+	void BuildLightingConstants(FLightingConstants& Out) const;
 
 	void UpdateAllTransforms();
 
@@ -48,6 +52,9 @@ public:
 	TArray<uint8> PrimitiveFlags;
 	
 	TArray<FExponentialHeightFogSceneInfo> FogInfos;
+
+	TArray<FLightSceneProxy*> Lights;
+	TArray<FLightSceneProxy*> DirtyLights;
 
 	// 컬링 결과로 프록시를 바로 내보내 컴포넌트를 역참조하지 않는다. 경계는 Build/Refit 때만 계산한다.
 	TBVH<FPrimitiveSceneProxy*> BVH{

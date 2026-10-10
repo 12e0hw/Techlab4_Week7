@@ -1,5 +1,6 @@
 ﻿#include "EnginePCH.h"
 #include "Scene.h"
+#include "LightSceneProxy.h"
 
 void FScene::AddPrimitive(UPrimitiveComponent* Component)
 {
@@ -114,6 +115,86 @@ void FScene::UpdateFogInfo(uint32 Id, const FFogInfo& FogInfo)
 	}
 }
 
+void FScene::AddLight(ULightComponentBase* Component)
+{
+	if (!Component || Component->SceneProxy) return;
+
+	FLightSceneProxy* Proxy = Component->CreateSceneProxy();
+	if (!Proxy) return;
+
+	Proxy->Scene = this;
+	Component->SceneProxy = Proxy;
+	// 다음 UpdateAllTransforms 전에 그려져도 기본값이 아닌 실제 값을 쓰도록 바로 채운다.
+	Proxy->UpdateFromComponent();
+	Lights.Add(Proxy);
+}
+
+void FScene::RemoveLight(ULightComponentBase* Component)
+{
+	if (!Component || !Component->SceneProxy) return;
+
+	FLightSceneProxy* Proxy = Component->SceneProxy;
+
+	const int32 Index = Lights.Find(Proxy);
+	// Ambient·Directional은 등록 순서상 마지막 것을 쓰므로 순서를 유지한다.
+	if (Index != INDEX_NONE) Lights.RemoveAt(Index);
+
+	if (Proxy->bQueuedForUpdate)
+	{
+		const int32 Found = DirtyLights.Find(Proxy);
+		if (Found != INDEX_NONE) DirtyLights.RemoveAtSwap(Found);
+	}
+
+	Component->SceneProxy = nullptr;
+	delete Proxy;
+}
+
+void FScene::RemoveAllLights()
+{
+	for (FLightSceneProxy* Proxy : Lights)
+	{
+		Proxy->GetComponent()->SceneProxy = nullptr;
+		delete Proxy;
+	}
+	Lights.Reset();
+	DirtyLights.Reset();
+}
+
+void FScene::MarkLightDirty(FLightSceneProxy* Proxy)
+{
+	if (Proxy->bQueuedForUpdate) return;
+	Proxy->bQueuedForUpdate = true;
+	DirtyLights.Add(Proxy);
+}
+
+void FScene::BuildLightingConstants(FLightingConstants& Out) const
+{
+	Out = FLightingConstants{};
+
+	for (const FLightSceneProxy* Proxy : Lights)
+	{
+		if (!Proxy->IsVisible()) continue;
+
+		switch (Proxy->GetLightType())
+		{
+		case ELightType::Ambient:
+			Out.Ambient.Color = static_cast<const FAmbientLightSceneProxy*>(Proxy)->GetInfo().Color;
+			break;
+		case ELightType::Directional:
+			Out.Directional = static_cast<const FDirectionalLightSceneProxy*>(Proxy)->GetInfo();
+			break;
+		case ELightType::Point:
+			if (Out.NumPointLights < MaxPointLights)
+				Out.PointLights[Out.NumPointLights++] = static_cast<const FPointLightSceneProxy*>(Proxy)->GetInfo();
+			break;
+		case ELightType::Spot:
+			if (Out.NumSpotLights < MaxSpotLights)
+				Out.SpotLights[Out.NumSpotLights++] = static_cast<const FSpotLightSceneProxy*>(Proxy)->GetInfo();
+			break;
+		}
+	}
+}
+
 void FScene::UpdateAllTransforms()
 {
 	for (FPrimitiveSceneProxy* Proxy : RenderStateDirtyProxies)
@@ -130,7 +211,14 @@ void FScene::UpdateAllTransforms()
 		PrimitiveFlags[Proxy->PackedIndex] = Proxy->GetComponent()->IsVisible() ? 1 : 0;
 		Proxy->bQueuedForUpdate = false;
 	}
-	
+
+	for (FLightSceneProxy* Proxy : DirtyLights)
+	{
+		Proxy->UpdateFromComponent();
+		Proxy->bQueuedForUpdate = false;
+	}
+	DirtyLights.Reset();
+
 	//const int32 Count = Proxies.Num();
 	//for (int32 i = 0; i < Count; ++i)
 	//{
@@ -149,7 +237,7 @@ void FScene::UpdateAllTransforms()
 
 	const bool bAnyMoved = DirtyProxies.Num() > 0;
 	DirtyProxies.Reset();
-	
+
 
 	if (bElementListChanged)
 	{
