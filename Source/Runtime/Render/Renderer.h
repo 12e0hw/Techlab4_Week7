@@ -8,7 +8,7 @@
 #include "Occlusion/GPUOcclusion.h"
 
 constexpr uint32 ObjectSlotBytes = 256;
-constexpr uint32 MaxFireBalls = 16;
+constexpr uint32 MaxLights = 16;
 
 struct FPerObjectConstants
 {
@@ -39,18 +39,45 @@ struct FOcclusionMeasureResult
 	uint32 FalseCulls = 0;        // 그중 실제로는 픽셀이 보인 드로우 수. 0이어야 한다
 };
 
-struct alignas(16) FFireBallLight
+constexpr uint32 MaxPointLights = 16;
+constexpr uint32 MaxSpotLights = 16;
+
+struct alignas(16) FDirectionalLightData
 {
-	FVector4 PositionRadius; // xyz: 위치, w: 반경
-	FVector4 ColorIntensity; // rgb: 색상, w: 강도
-	FVector4 FalloffEnabled; // x: 반경 감쇠, y: 사용 여부, zw: 패딩
+	FVector4 Direction = FVector4(0.5f, 0.5f, -1.0f, 1.0f);		// xyz: 빛이 향하는 방향, w: 활성화 여부
+	FVector4 ColorIntensity = FVector4(0.5f, 0.5f, 0.5f, 1.0f); // rgb: 색상, w: 강도
 };
 
-struct alignas(16) FFireBallLightConstants
+struct alignas(16) FAmbientLightData
 {
-	FFireBallLight Light[MaxFireBalls];
-	uint32 LightCount;
-	uint32 Padding[3] = {};
+	FVector4 ColorIntensity = FVector4(0.5f, 0.5f, 0.5f, 1.0f);	// rgb: 색상, w: 강도
+};
+
+struct alignas(16) FPointLightData
+{
+	FVector4 PositionRadius = FVector4(0, 0, 0, 10.0f);		// xyz: 월드 위치, w: 감쇄 반경
+	FVector4 ColorIntensity = FVector4(1, 1, 1, 1.0f);		// rgb: 색상, w: 강도
+	FVector4 FalloffEnabled = FVector4(2.0f, 1.0f, 0, 0);	// x: Falloff, y: 활성화 여부, zw: 패딩
+};
+
+struct alignas(16) FSpotLightData
+{
+	FVector4 PositionRadius = FVector4(0, 0, 0, 10.0f);					// xyz: 월드 위치, w: 감쇄 반경
+	FVector4 DirectionEnabled = FVector4(0, 0, 1, 1.0f);				// xyz: 빛이 향하는 방향, w: 활성화 여부
+	FVector4 ColorIntensity = FVector4(1, 1, 1, 1.0f);					// rgb: 색상, w: 강도
+	FVector4 ConeAnglesFalloff = FVector4(0.965f, 0.866f, 1.0f, 0.0f);	// x: cos(Inner), y: cos(Outer), z: Falloff, w: 패딩
+};
+
+struct alignas(16) FLightConstants
+{
+	FDirectionalLightData DirectionalLight;
+	FAmbientLightData AmbientLight;
+	FPointLightData PointLights[MaxPointLights];
+	FSpotLightData SpotLights[MaxSpotLights];
+	uint32 PointLightCount = 0;
+	uint32 SpotLightCount = 0;
+	uint32 DirectionalLightCount = 0;
+	uint32 AmbientLightCount = 0;
 };
 
 class FRenderer
@@ -89,7 +116,8 @@ public:
 	uint8* BeginObjectConstants(uint32 MaxSlots);
 	void EndObjectConstants();
 
-	void SetFireBallLight(const FFireBallLightConstants& LightConstants);
+	void SetLightConstants(const FLightConstants& InLightConstants);
+	void SetFireBallLight(const FLightConstants& InLightConstants) { SetLightConstants(InLightConstants); }
 
 private:
 	// FIFO 소비용 배열의 용량만 재사용하며 매 View의 패킷 값은 새로 채운다.
@@ -128,6 +156,6 @@ private:
 
 	TArray<FSortEntry> SortEntries;
 
-	TUniquePtr<FConstantBuffer> FireBallLightCB;
-	FFireBallLightConstants FireBallLightData{};
+	TUniquePtr<FConstantBuffer> LightCB;
+	FLightConstants LightData{};
 };

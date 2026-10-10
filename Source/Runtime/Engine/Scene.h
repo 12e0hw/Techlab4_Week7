@@ -1,9 +1,10 @@
-﻿#pragma once
+#pragma once
 
 #include "PrimitiveSceneProxy.h"
 #include "Component/BillboardComponent.h"
 #include "Component/PrimitiveComponent.h"
 #include "Component/FireBallComponent.h"
+#include "Component/LightComponent.h"
 #include "Math/Frustum.h"
 #include "Math/BVH.h"
 #include "Render/FogInfo.h"
@@ -35,7 +36,12 @@ public:
 	void MarkDirty(FPrimitiveSceneProxy* Proxy);
 	void MarkRenderStateDirty(FPrimitiveSceneProxy* Proxy);
 
-	void UpdateFireBallLight(FRenderer* Renderer);
+	void UpdateLights(FRenderer* Renderer);
+	void RegisterLight(ULightComponent* Light);
+	void UnregisterLight(ULightComponent* Light);
+
+	// 레거시 호환용
+	void UpdateFireBallLight(FRenderer* Renderer) { UpdateLights(Renderer); }
 	void RegisterFireBall(UFireBallComponent* FireBall);
 	void UnregisterFireBall(UFireBallComponent* FireBall);
 
@@ -57,5 +63,6 @@ public:
 	};
 	bool bElementListChanged = false;
 	
+	TArray<ULightComponent*> LightComponents;
 	TArray<UFireBallComponent*> FireBallComponents;
 };

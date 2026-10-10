@@ -1,5 +1,9 @@
-﻿#include "EnginePCH.h"
+#include "EnginePCH.h"
 #include "Scene.h"
+#include "Component/DirectionalLightComponent.h"
+#include "Component/PointLightComponent.h"
+#include "Component/SpotLightComponent.h"
+#include "Component/AmbientLightComponent.h"
 
 void FScene::AddPrimitive(UPrimitiveComponent* Component)
 {
@@ -206,60 +210,138 @@ void FScene::MarkRenderStateDirty(FPrimitiveSceneProxy* Proxy)
 }
 
 
-void FScene::UpdateFireBallLight(FRenderer* Renderer)
+void FScene::UpdateLights(FRenderer* Renderer)
 {
 	if (!Renderer)
 		return;
 
-	FFireBallLight Data{};
-	FFireBallLightConstants Constants{};
+	FLightConstants Constants{};
 
-	Constants.LightCount = 0;
+	// 1. 등록된 ULightComponent 순회
+	for (ULightComponent* Light : LightComponents)
+	{
+		if (!Light || !Light->IsLightEnabled())
+			continue;
 
-	// 기본값: 활성 FireBall 없음
-	Data.PositionRadius = FVector4(0, 0, 0, 0);
-	Data.ColorIntensity = FVector4(0, 0, 0, 0);
-	Data.FalloffEnabled = FVector4(1, 0, 0, 0);
+		switch (Light->GetLightType())
+		{
+		case ELightType::Directional:
+		{
+			if (UDirectionalLightComponent* DirLight = Cast<UDirectionalLightComponent>(Light))
+			{
+				const FVector Dir = DirLight->GetLightDirection();
+				Constants.DirectionalLight.Direction = FVector4(Dir.X, Dir.Y, Dir.Z, 1.0f);
+				Constants.DirectionalLight.ColorIntensity = FVector4(
+					DirLight->GetLightColor().X,
+					DirLight->GetLightColor().Y,
+					DirLight->GetLightColor().Z,
+					DirLight->GetIntensity()
+				);
+				Constants.DirectionalLightCount = 1;
+			}
+			break;
+		}
+		case ELightType::Ambient:
+		{
+			if (UAmbientLightComponent* AmbLight = Cast<UAmbientLightComponent>(Light))
+			{
+				Constants.AmbientLight.ColorIntensity = FVector4(
+					AmbLight->GetLightColor().X,
+					AmbLight->GetLightColor().Y,
+					AmbLight->GetLightColor().Z,
+					AmbLight->GetIntensity()
+				);
+				Constants.AmbientLightCount = 1;
+			}
+			break;
+		}
+		case ELightType::Point:
+		{
+			if (Constants.PointLightCount < MaxPointLights)
+			{
+				if (UPointLightComponent* PointLight = Cast<UPointLightComponent>(Light))
+				{
+					const FVector Pos = PointLight->GetWorldLocation();
+					const FVector4 Col = PointLight->GetLightColor();
+					FPointLightData& Data = Constants.PointLights[Constants.PointLightCount++];
 
+					Data.PositionRadius = FVector4(Pos.X, Pos.Y, Pos.Z, std::max<float>(PointLight->GetAttenuationRadius(), 0.001f));
+					Data.ColorIntensity = FVector4(Col.X, Col.Y, Col.Z, std::max<float>(PointLight->GetIntensity(), 0.0f));
+					Data.FalloffEnabled = FVector4(std::max<float>(PointLight->GetFalloff(), 0.001f), 1.0f, 0.0f, 0.0f);
+				}
+			}
+			break;
+		}
+		case ELightType::Spot:
+		{
+			if (Constants.SpotLightCount < MaxSpotLights)
+			{
+				if (USpotLightComponent* SpotLight = Cast<USpotLightComponent>(Light))
+				{
+					const FVector Pos = SpotLight->GetWorldLocation();
+					FTransform WorldTransform;
+					WorldTransform.Rotation = SpotLight->GetWorldRotation();
+					const FVector Dir = WorldTransform.GetForward();
+					const FVector4 Col = SpotLight->GetLightColor();
+
+					const float InnerRad = FMath::DegreesToRadians(SpotLight->GetInnerConeAngle());
+					const float OuterRad = FMath::DegreesToRadians(SpotLight->GetOuterConeAngle());
+
+					FSpotLightData& Data = Constants.SpotLights[Constants.SpotLightCount++];
+					Data.PositionRadius = FVector4(Pos.X, Pos.Y, Pos.Z, std::max<float>(SpotLight->GetAttenuationRadius(), 0.001f));
+					Data.DirectionEnabled = FVector4(Dir.X, Dir.Y, Dir.Z, 1.0f);
+					Data.ColorIntensity = FVector4(Col.X, Col.Y, Col.Z, std::max<float>(SpotLight->GetIntensity(), 0.0f));
+					Data.ConeAnglesFalloff = FVector4(std::cosf(InnerRad), std::cosf(OuterRad), std::max<float>(SpotLight->GetFalloff(), 0.001f), 0.0f);
+				}
+			}
+			break;
+		}
+		}
+	}
+
+	// 2. 레거시 FireBallComponents 호환 (PointLight로 등록)
 	for (UFireBallComponent* FireBall : FireBallComponents)
 	{
-		if (Constants.LightCount >= MaxFireBalls)
-		{
-			break; // 최대 FireBall 수를 초과하면 루프 종료
-		}
-
+		if (Constants.PointLightCount >= MaxPointLights)
+			break;
 		if (!FireBall)
 			continue;
 
-		const FVector Position = FireBall->GetWorldLocation();
-		const FVector4 Color = FireBall->GetLightColor();
+		const FVector Pos = FireBall->GetWorldLocation();
+		const FVector4 Col = FireBall->GetLightColor();
+		FPointLightData& Data = Constants.PointLights[Constants.PointLightCount++];
 
-		Data.PositionRadius = FVector4(
-			Position.X,
-			Position.Y,
-			Position.Z,
-			std::max<float>(FireBall->GetRadius(), 0.001f)
-		);
-
-		Data.ColorIntensity = FVector4(
-			Color.X,
-			Color.Y,
-			Color.Z,
-			std::max<float>(FireBall->GetIntensity(), 0.0f)
-		);
-
-		Data.FalloffEnabled = FVector4(
-			std::max<float>(FireBall->GetRadiusFalloff(), 0.001f),
-			1.0f,
-			0.0f,
-			0.0f
-		);
-
-		Constants.Light[Constants.LightCount] = Data;
-		Constants.LightCount++;
+		Data.PositionRadius = FVector4(Pos.X, Pos.Y, Pos.Z, std::max<float>(FireBall->GetRadius(), 0.001f));
+		Data.ColorIntensity = FVector4(Col.X, Col.Y, Col.Z, std::max<float>(FireBall->GetIntensity(), 0.0f));
+		Data.FalloffEnabled = FVector4(std::max<float>(FireBall->GetRadiusFalloff(), 0.001f), 1.0f, 0.0f, 0.0f);
 	}
 
-	Renderer->SetFireBallLight(Constants);
+	Renderer->SetLightConstants(Constants);
+}
+
+void FScene::RegisterLight(ULightComponent* Light)
+{
+	if (!Light)
+		return;
+
+	for (ULightComponent* Existing : LightComponents)
+	{
+		if (Existing == Light)
+			return;
+	}
+	LightComponents.Add(Light);
+}
+
+void FScene::UnregisterLight(ULightComponent* Light)
+{
+	for (uint32 i = 0; i < LightComponents.Num(); ++i)
+	{
+		if (LightComponents[i] == Light)
+		{
+			LightComponents.RemoveAt(i, 1);
+			return;
+		}
+	}
 }
 
 void FScene::RegisterFireBall(UFireBallComponent* FireBall)

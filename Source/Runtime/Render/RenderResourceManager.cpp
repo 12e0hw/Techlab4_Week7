@@ -78,5 +78,4 @@ void FRenderResourceManager::LoadOrCompileShader(const FString& Path)
 	ShaderProgramMap[Path] = MakeUnique<FShaderProgram>(VsRaw, PsRaw);
 
 	HTR_LOG(Info, "[Shader] loaded: {}", Path);
-
 }

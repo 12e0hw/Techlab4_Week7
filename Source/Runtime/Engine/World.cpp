@@ -14,6 +14,7 @@
 #include "Collision/Ray.h"
 #include "Component/BillboardComponent.h"
 #include "Component/ExponentialHeightFogComponent.h"
+#include "Component/LightComponent.h"
 
 #include "Component/StaticMeshComponent.h"
 #include "Asset/LOD/StaticMeshLODSelector.h"
@@ -93,6 +94,8 @@ AActor* UWorld::SpawnActor(UClass* Class, FName InName, const FTransform* Transf
 			Scene.AddPrimitive(Primitive);
 		else if (UExponentialHeightFogComponent* Fog = Cast<UExponentialHeightFogComponent>(Component))
 			Scene.AddFogInfo(Fog->GetUUID(), Fog->GetFogInfo());
+		else if (ULightComponent* Light = Cast<ULightComponent>(Component))
+			Scene.RegisterLight(Light);
 		else if (UFireBallComponent* FireBall = Cast<UFireBallComponent>(Component))
 			Scene.RegisterFireBall(FireBall);
 	}
@@ -567,6 +570,14 @@ bool UWorld::DestroyActor(AActor* Actor)
 		{
 			Scene.RemoveFogInfo(Fog->GetUUID());
 		}
+		else if (ULightComponent* Light = Cast<ULightComponent>(Component))
+		{
+			Scene.UnregisterLight(Light);
+		}
+		else if (UFireBallComponent* FireBall = Cast<UFireBallComponent>(Component))
+		{
+			Scene.UnregisterFireBall(FireBall);
+		}
 	}
 
 	Actor->RegisterAllActorTickFunctions(false);
@@ -747,6 +758,8 @@ void UWorld::PostDuplicate(bool bDuplicateForPIE)
 				Scene.AddPrimitive(Primitive);
 			else if (UExponentialHeightFogComponent* Fog = Cast<UExponentialHeightFogComponent>(Component))
 				Scene.AddFogInfo(Fog->GetUUID(), Fog->GetFogInfo());
+			else if (ULightComponent* Light = Cast<ULightComponent>(Component))
+				Scene.RegisterLight(Light);
 			else if (UFireBallComponent* FireBall = Cast<UFireBallComponent>(Component))
 				Scene.RegisterFireBall(FireBall);
 		}

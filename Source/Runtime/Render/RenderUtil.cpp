@@ -95,5 +95,4 @@ FShaderByteCode RenderUtil::GetOrCompile(const FString& ShaderPath, const char* 
 		SaveByteCode(OutCSOPath, Compiled);
 
 	return Compiled;
-
 }

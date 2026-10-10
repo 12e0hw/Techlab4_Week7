@@ -19,6 +19,8 @@
 #include "Camera/CameraActor.h"
 #include "Camera/CameraComponent.h"
 #include "GameFramework/Actor/LightActor.h"
+#include "Component/PointLightComponent.h"
+#include "Component/SpotLightComponent.h"
 
 #include "Asset/AssetManager.h"
 #include "Render/RenderResourceManager.h"
@@ -415,8 +417,8 @@ void UEditorEngine::RenderMultipleViewports()
 		{
 			SCOPE_CYCLE_COUNTER(STAT_CaptureWorld);
 			MultipleViewportsAdapter.CaptureWorld(*ViewWorld);
-			// FireBall 라이트 상수는 Renderer 공용 상태라 월드가 바뀌면 다시 올린다.
-			ViewWorld->GetScene().UpdateFireBallLight(Renderer);
+			// 라이트 상수는 Renderer 공용 상태라 월드가 바뀌면 다시 올린다.
+			ViewWorld->GetScene().UpdateLights(Renderer);
 			CapturedWorld = ViewWorld;
 		}
 
@@ -446,7 +448,7 @@ void UEditorEngine::RenderMultipleViewports()
 		{
 			SCOPE_CYCLE_COUNTER(STAT_CaptureWorld);
 			MultipleViewportsAdapter.CaptureWorld(*ViewWorld);
-			ViewWorld->GetScene().UpdateFireBallLight(Renderer);
+			ViewWorld->GetScene().UpdateLights(Renderer);
 			CapturedWorld = ViewWorld;
 		}
 
@@ -641,12 +643,29 @@ void UEditorEngine::RenderOverlayPass(const int32 ViewIndex, UWorld& ViewWorld, 
 			ViewWorld.GetPathTracker().OnRender(LineBatcher.get());
 		}
 
-		// 선택된 액터가 라이트면 원뿔을 같이 쌓는다
+		// 선택된 액터가 라이트면 디버그 라인을 같이 쌓는다
 		if (Gizmo->GetTarget())
 		{
 			if (ALightActor* LightActor = Cast<ALightActor>(Gizmo->GetTarget()->GetOwner()))
 			{
-				LightActor->GetSpotLightComponent()->DrawDebug(LineBatcher.get());
+				if (LightActor->GetSpotLightComponent())
+				{
+					LightActor->GetSpotLightComponent()->DrawDebug(LineBatcher.get());
+				}
+			}
+			else if (AActor* TargetActor = Gizmo->GetTarget()->GetOwner())
+			{
+				for (UActorComponent* Comp : TargetActor->GetComponents())
+				{
+					if (UPointLightComponent* PointLight = Cast<UPointLightComponent>(Comp))
+					{
+						PointLight->DrawDebug(LineBatcher.get());
+					}
+					else if (USpotLightComponent* SpotLight = Cast<USpotLightComponent>(Comp))
+					{
+						SpotLight->DrawDebug(LineBatcher.get());
+					}
+				}
 			}
 		}
 
