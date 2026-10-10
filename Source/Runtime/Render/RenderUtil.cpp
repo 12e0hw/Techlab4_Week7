@@ -1,21 +1,28 @@
 #include "EnginePCH.h"
 #include "RenderUtil.h"
 
+namespace
+{
+#ifdef _DEBUG
+	constexpr uint32 ShaderCompileFlags = D3DCOMPILE_ENABLE_STRICTNESS | D3DCOMPILE_DEBUG | D3DCOMPILE_SKIP_OPTIMIZATION;
+	constexpr const char* ShaderCacheDir = "Intermediate/Shaders/Debug";
+#else
+	constexpr uint32 ShaderCompileFlags = D3DCOMPILE_ENABLE_STRICTNESS;
+	constexpr const char* ShaderCacheDir = "Intermediate/Shaders/Release";
+#endif
+}
+
 FShaderByteCode RenderUtil::CompileShader(FString Path, const char* EntryPoint, EShaderType ShaderType)
 {
 	const char* Target = (ShaderType == EShaderType::Vertex) ? "vs_5_0" : "ps_5_0";
-
-	uint32 Flags = D3DCOMPILE_ENABLE_STRICTNESS;
-#ifdef _DEBUG
-	Flags |= D3DCOMPILE_DEBUG | D3DCOMPILE_SKIP_OPTIMIZATION;
-#endif
 
 	FShaderByteCode ByteCode;
 
 	std::wstring WPath(Path.begin(), Path.end());
 
 	ComPtr<ID3DBlob> ErrorBlob;
-	HRESULT hr = D3DCompileFromFile(WPath.c_str(), nullptr, nullptr, EntryPoint, Target, 0, 0, ByteCode.Blob.GetAddressOf(), ErrorBlob.GetAddressOf());
+	HRESULT hr = D3DCompileFromFile(WPath.c_str(), nullptr, D3D_COMPILE_STANDARD_FILE_INCLUDE, EntryPoint, Target,
+		ShaderCompileFlags, 0, ByteCode.Blob.GetAddressOf(), ErrorBlob.GetAddressOf());
 
 	if (FAILED(hr))
 	{
@@ -61,7 +68,7 @@ FString RenderUtil::GetCsoPath(const FString& ShaderPath, EShaderType ShaderType
 	const fs::path Rel = fs::relative(ShaderPath, "Resources/Shader");
 	const char* Suffix = (ShaderType == EShaderType::Vertex) ? "_VS.cso" : "_PS.cso";
 
-	fs::path Out = fs::path("Intermediate/Shaders") / Rel.parent_path();
+	fs::path Out = fs::path(ShaderCacheDir) / Rel.parent_path();
 	Out /= Rel.stem().generic_string() + Suffix;
 	return Out.generic_string();
 }
