@@ -32,6 +32,28 @@ void UBillboardComponent::TickComponent(float DeltaTime)
 	Super::TickComponent(DeltaTime);
 }
 
+// 그릴 때 View마다 카메라 쪽으로 돌아가므로, 쿼드 AABB를 그대로 쓰면 BVH가 회전한 빌보드를 놓친다.
+// 어느 방향으로 돌아도 쿼드를 감싸는 반지름을 쓰되, 렌더처럼 월드 스케일 Y·Z를 폭·높이로 본다.
+FBox UBillboardComponent::CalcLocalBounds() const
+{
+	if (!QuadMesh)
+		return Super::CalcLocalBounds();
+
+	const FBox& Quad = QuadMesh->GetMeshData().AABB;
+	const FVector Scale = GetWorldScale3D();
+	const float HalfWidth = std::max(std::fabs(Quad.Min.Y), std::fabs(Quad.Max.Y)) * std::fabs(Scale.Y);
+	const float HalfHeight = std::max(std::fabs(Quad.Min.Z), std::fabs(Quad.Max.Z)) * std::fabs(Scale.Z);
+	const float Radius = std::sqrt(HalfWidth * HalfWidth + HalfHeight * HalfHeight);
+
+	// 프록시가 이 상자에 컴포넌트 월드 행렬(스케일 포함)을 곱하므로 축마다 스케일을 미리 나눈다.
+	constexpr float MinScale = 1.0e-4f;
+	const FVector Half(
+		Radius / std::max(std::fabs(Scale.X), MinScale),
+		Radius / std::max(std::fabs(Scale.Y), MinScale),
+		Radius / std::max(std::fabs(Scale.Z), MinScale));
+	return FBox{ Half * -1.0f, Half };
+}
+
 bool UBillboardComponent::LineTraceComponent(const FRay& WorldRay, FHitResult& OutHit)
 {
 	if (!QuadMesh) return false;

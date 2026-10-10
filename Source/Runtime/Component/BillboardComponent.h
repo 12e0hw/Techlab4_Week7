@@ -34,6 +34,7 @@ public:
 	virtual void SetMaterial(int32 SlotIndex, UMaterial* InMaterial) override { if (SlotIndex == 0) Material = InMaterial; }
 
 	virtual const FStaticMeshData* GetMeshData() const override { return QuadMesh ? &QuadMesh->GetMeshData() : nullptr; }
+	virtual FBox CalcLocalBounds() const override;
 
 	void GetWorldTransformedMatrix(FMatrix* OutWorldMatrix) const;
 	// 기본 카메라 기준 월드 행렬로 Billboard 렌더 패킷을 제출한다.
