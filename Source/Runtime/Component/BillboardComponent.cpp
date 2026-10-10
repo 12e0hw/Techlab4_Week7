@@ -68,10 +68,15 @@ void UBillboardComponent::SubmitToRenderQueue(FRenderQueue& RenderQueue, const F
 	if (QuadMesh == nullptr || Material == nullptr)
 		return;
 
+	// b1을 채우지 않으면 앞서 그린 머티리얼의 상수를 SubUV 값으로 읽는다. 흰 스태틱 메시 뒤면 프레임 1이 되어 텍스처 밖을 샘플한다.
+	static constexpr FSubUVConstants WholeTexture{ 0.0f, 1.0f, 1.0f, 1.0f };
+
 	FRenderPacket Packet;
 	Packet.Mesh = QuadMesh;
 	Packet.Material = Material;
 	Packet.Model = RenderQueue.StoreWorldMatrix(BillboardWorldMatrix);
+	Packet.MaterialParamData = &WholeTexture;
+	Packet.MaterialParamDataSize = sizeof(FSubUVConstants);
 	RenderQueue.Add(Packet);
 }
 

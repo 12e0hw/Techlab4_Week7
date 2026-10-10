@@ -2,6 +2,15 @@
 
 #include "PrimitiveComponent.h"
 
+// ParticleSubUVShader의 b1. 빌보드와 파티클이 같은 셰이더를 쓴다.
+struct FSubUVConstants
+{
+	float CurrentFrame;
+	float AtlasRowSize;
+	float AtlasColSize;
+	float Alpha;
+};
+
 class UBillboardComponent : public UPrimitiveComponent
 {
 	DECLARE_CLASS(UBillboardComponent, UPrimitiveComponent)
