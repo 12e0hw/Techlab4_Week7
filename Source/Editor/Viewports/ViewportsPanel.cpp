@@ -250,15 +250,47 @@ void FViewportsPanel::OnRender()
 			PendingCameraPreset = static_cast<EMultipleViewportsCameraPreset>(SelectedPreset);
 		}
 		ImGui::SameLine();
-		// 레이아웃과 독립적으로 각 View의 장면 Fill Mode를 편집한다.
+		// 조명·셰이딩 모델은 Lit일 때만 보인다.
         if (ViewportAdapter)
         {
-            int Mode = ViewportAdapter->IsViewWireframe(ViewIndex) ? 1 : 0;
-            const char* Labels[] = {"Solid", "Wireframe"};
+            FViewRenderMode RenderMode = ViewportAdapter->GetViewRenderMode(ViewIndex);
+            bool bChanged = false;
+
+            int ViewMode = static_cast<int>(RenderMode.ViewMode);
             ImGui::SetNextItemWidth(100.0f);
-            if (ImGui::Combo("##FillMode", &Mode, Labels, 2))
-                ViewportAdapter->SetViewWireframe(ViewIndex, Mode == 1);
+            if (ImGui::Combo("##ViewMode", &ViewMode, ViewModeNames, IM_ARRAYSIZE(ViewModeNames)))
+            {
+                RenderMode.ViewMode = static_cast<EViewMode>(ViewMode);
+                bChanged = true;
+            }
             ImGui::SameLine();
+
+            if (RenderMode.ViewMode == EViewMode::Lit)
+            {
+                const char* LightModelLabels[] = {"Lambert", "Phong", "Blinn-Phong"};
+                int LightModel = static_cast<int>(RenderMode.LightModel);
+                ImGui::SetNextItemWidth(110.0f);
+                if (ImGui::Combo("##LightModel", &LightModel, LightModelLabels, IM_ARRAYSIZE(LightModelLabels)))
+                {
+                    RenderMode.LightModel = static_cast<ELightModel>(LightModel);
+                    bChanged = true;
+                }
+                ImGui::SetItemTooltip("Lighting Model");
+                ImGui::SameLine();
+
+                int ShadingModel = static_cast<int>(RenderMode.ShadingModel);
+                ImGui::SetNextItemWidth(90.0f);
+                if (ImGui::Combo("##ShadingModel", &ShadingModel, ShadingModelNames, IM_ARRAYSIZE(ShadingModelNames)))
+                {
+                    RenderMode.ShadingModel = static_cast<EShadingModel>(ShadingModel);
+                    bChanged = true;
+                }
+                ImGui::SetItemTooltip("Shading Model");
+                ImGui::SameLine();
+            }
+
+            if (bChanged)
+                ViewportAdapter->SetViewRenderMode(ViewIndex, RenderMode);
         }
         if (CurrentLayoutMode == ELayoutMode::QuadSplit)
 		{

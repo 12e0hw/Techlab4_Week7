@@ -126,7 +126,6 @@ bool FSettingsPanel::SaveSettings() const
 	File << "\n";
 
 	File << "[Rendering]\n";
-	File << "Wireframe=" << Settings.bWireframe << "\n";
 	File << "EnableFXAA=" << Settings.bEnableFXAA << "\n";
 	File << "DepthView=" << Settings.bDepthView << "\n";
 	File << "\n";
@@ -151,7 +150,10 @@ bool FSettingsPanel::SaveSettings() const
         File << "View" << Index << "Fov=" << Snapshot.ViewFov[Index] << "\n";
         File << "View" << Index << "OrthoWidth=" << Snapshot.ViewOrthoWidth[Index] << "\n";
         File << "View" << Index << "Preset=" << Snapshot.ViewPreset[Index] << "\n";
-        File << "View" << Index << "Wireframe=" << Snapshot.ViewWireframe[Index] << "\n";
+        const FViewRenderMode& RenderMode = Snapshot.ViewRenderMode[Index];
+        File << "View" << Index << "ViewMode=" << ViewModeNames[static_cast<int32>(RenderMode.ViewMode)] << "\n";
+        File << "View" << Index << "LightModel=" << LightModelNames[static_cast<int32>(RenderMode.LightModel)] << "\n";
+        File << "View" << Index << "ShadingModel=" << ShadingModelNames[static_cast<int32>(RenderMode.ShadingModel)] << "\n";
         File << "View" << Index << "LocationX=" << Snapshot.ViewLocation[Index].X << "\n";
         File << "View" << Index << "LocationY=" << Snapshot.ViewLocation[Index].Y << "\n";
         File << "View" << Index << "LocationZ=" << Snapshot.ViewLocation[Index].Z << "\n";
@@ -193,6 +195,19 @@ bool FSettingsPanel::LoadSettings()
 			std::string ValueStr;
 			if (std::getline(Iss, ValueStr))
 			{
+				// 뷰 모드 값은 이름이라 아래 숫자 파싱 전에 읽는다. 모르는 이름은 무시한다.
+				for (int32 Index = 0; Index < 4; ++Index)
+				{
+					FString Prefix = "View";
+					Prefix += static_cast<char>('0' + Index);
+					FViewRenderMode& RenderMode = Settings.ViewRenderMode[Index];
+					if (Key == Prefix + "ViewMode")
+						TryParseModeName(ValueStr, ViewModeNames, RenderMode.ViewMode);
+					else if (Key == Prefix + "LightModel")
+						TryParseModeName(ValueStr, LightModelNames, RenderMode.LightModel);
+					else if (Key == Prefix + "ShadingModel")
+						TryParseModeName(ValueStr, ShadingModelNames, RenderMode.ShadingModel);
+				}
 				// 새 View 키는 NaN·잘못된 숫자·범위 밖 값을 무시한다.
                 for (int32 Index = 0; Index < 4; ++Index)
                 {
@@ -208,8 +223,6 @@ bool FSettingsPanel::LoadSettings()
                         Settings.ViewOrthoWidth[Index] = FMath::Clamp(Value, 0.01f, 1000000.0f);
                     else if (Key == Prefix + "Preset" && Value >= 0 && Value <= 7 && Value == static_cast<int32>(Value))
                         Settings.ViewPreset[Index] = static_cast<int32>(Value);
-                    else if (Key == Prefix + "Wireframe" && (Value == 0 || Value == 1))
-                        Settings.ViewWireframe[Index] = static_cast<int32>(Value);
                     else if (Key == Prefix + "LocationX")
                     {
                         Settings.ViewLocation[Index].X = Value;
@@ -252,7 +265,6 @@ bool FSettingsPanel::LoadSettings()
 				else if (Key == "DrawGrid") Settings.bDrawGrid = std::stoi(ValueStr);
 				else if (Key == "ExponentialHeightFog") Settings.bExponentialHeightFog = std::stoi(ValueStr);
 
-				else if (Key == "Wireframe") Settings.bWireframe = std::stoi(ValueStr);
 				else if (Key == "EnableFXAA") Settings.bEnableFXAA = std::stoi(ValueStr);
 				else if (Key == "DepthView") Settings.bDepthView = std::stoi(ValueStr);
 
@@ -314,7 +326,7 @@ void FSettingsPanel::ReadViewportSettings(FEditorSettings& Out) const
         Out.ViewFov[Index] = Camera.Projection.FovDegrees;
         Out.ViewOrthoWidth[Index] = Camera.Projection.OrthoWidth;
         Out.ViewPreset[Index] = static_cast<int32>(ViewportAdapter->GetCameraPreset(Index));
-        Out.ViewWireframe[Index] = ViewportAdapter->IsViewWireframe(Index) ? 1 : 0;
+        Out.ViewRenderMode[Index] = ViewportAdapter->GetViewRenderMode(Index);
         Out.ViewLocation[Index] = Camera.Transform.Location;
         Out.ViewRotation[Index] = Camera.Transform.Rotation;
         Out.bViewLocationSaved[Index] = true;
@@ -325,7 +337,7 @@ void FSettingsPanel::ReadViewportSettings(FEditorSettings& Out) const
 // 종료 시 Adapter를 읽지 않도록 살아 있는 동안 저장용 설정을 갱신한다.
 void FSettingsPanel::CaptureViewportSettings() { ReadViewportSettings(Settings); }
 
-// 저장 프리셋·투영·표시를 슬롯별로 복원하며 구형 ini는 초기값과 공통 Wireframe을 사용한다.
+// 저장 프리셋·투영·표시·뷰 모드를 슬롯별로 복원하며 저장되지 않은 값은 초기값을 쓴다.
 void FSettingsPanel::ApplyViewportSettings()
 {
     if (!ViewportAdapter) return;
@@ -342,6 +354,6 @@ void FSettingsPanel::ApplyViewportSettings()
         if (Settings.bViewLocationSaved[Index]) Camera.Transform.Location = Settings.ViewLocation[Index];
         if (Settings.bViewRotationSaved[Index]) Camera.Transform.Rotation = Settings.ViewRotation[Index];
         ViewportAdapter->ApplyCameraProperties(Index, Camera, false);
-        ViewportAdapter->SetViewWireframe(Index, Settings.ViewWireframe[Index] < 0 ? Settings.bWireframe : Settings.ViewWireframe[Index] == 1);
+        ViewportAdapter->SetViewRenderMode(Index, Settings.ViewRenderMode[Index]);
     }
 }
