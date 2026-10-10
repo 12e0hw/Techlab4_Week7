@@ -11,21 +11,26 @@ class UWorld;
 struct FEditorSettings
 {
 	// 에디터 렌더 옵션과 Multiple Viewports 레이아웃의 영구 설정을 한곳에 담는다.
-	// Toggles
-	bool bWireframe = false;
+	// Show: 화면에 무엇을 그릴지
 	bool bDrawPrimitives = true;
 	bool bDrawBoundingBox = false;
 	bool bShowUUID = false;
-	bool bDrawBatchLine = true;
-	bool bDrawPSGrid = false;
-	bool bEnableFXAA = true;
-	bool bDepthView = false;
+	bool bDrawGrid = true;
 	bool bExponentialHeightFog = true;
 
-	// Values
+	// Rendering
+	bool bWireframe = false;	// View별 값이 없는 구형 editor.ini의 Fill Mode 기본값으로만 쓴다
+	bool bEnableFXAA = true;
+	bool bDepthView = false;
+
+	// Grid
+	int32 GridSpacing = 1;
+
+	// Camera
 	float CameraSpeed = 1.0f;
 	float MouseSensitivity = 1.0f;
-	int32 GridSpacing = 1;
+
+	// Multiple Viewports
 	float MultipleViewportsHorizontal = 0.5f;
 	float MultipleViewportsVertical = 0.5f;
 	bool bMultipleViewportsSingle = false;

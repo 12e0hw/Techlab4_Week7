@@ -18,7 +18,6 @@
 
 #include "Camera/CameraActor.h"
 #include "Camera/CameraComponent.h"
-#include "GameFramework/Actor/LightActor.h"
 
 #include "Asset/AssetManager.h"
 #include "Render/RenderResourceManager.h"
@@ -415,8 +414,6 @@ void UEditorEngine::RenderMultipleViewports()
 		{
 			SCOPE_CYCLE_COUNTER(STAT_CaptureWorld);
 			MultipleViewportsAdapter.CaptureWorld(*ViewWorld);
-			// FireBall 라이트 상수는 Renderer 공용 상태라 월드가 바뀌면 다시 올린다.
-			ViewWorld->GetScene().UpdateFireBallLight(Renderer);
 			CapturedWorld = ViewWorld;
 		}
 
@@ -446,7 +443,6 @@ void UEditorEngine::RenderMultipleViewports()
 		{
 			SCOPE_CYCLE_COUNTER(STAT_CaptureWorld);
 			MultipleViewportsAdapter.CaptureWorld(*ViewWorld);
-			ViewWorld->GetScene().UpdateFireBallLight(Renderer);
 			CapturedWorld = ViewWorld;
 		}
 
@@ -566,24 +562,14 @@ void UEditorEngine::RenderOpaquePass(const int32 ViewIndex, const FRenderingInfo
 		RenderCommand::SetDepthStencilState(EDepthStencilState::Default);
 
 		RenderCommand::SetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
-		// 반투명은 Grid 뒤에 합성되어야 하므로 불투명만 먼저 그린다.
+		// 불투명을 먼저 그리고 반투명을 먼 것부터 그린다.
+		// Grid는 깊이를 쓰지 않는 반투명 위에도 겹칠 수 있지만, 언리얼의 에디터 프리미티브처럼 Overlay Pass에서 마지막에 합성한다.
 		Renderer->RenderQueueSorting(RenderQueue, ViewProjection);
 		Renderer->RenderOpaque(ViewProjection);
+		Renderer->RenderTranslucent(ViewProjection);
 		// 장면 Wireframe이 Grid·Gizmo·UI로 전파되지 않도록 복원한다.
 		RenderCommand::SetRasterizerState(ERasterizerState::SolidBack);
 	}
-
-
-
-	if (bDrawPrimitives)
-	{
-		// Grid 파이프라인이 바꾼 상태를 장면 기준으로 되돌린 뒤 반투명을 먼 것부터 그린다.
-		RenderCommand::SetRasterizerState(SceneRasterizerState);
-		RenderCommand::SetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
-		Renderer->RenderTranslucent(ViewProjection);
-		RenderCommand::SetRasterizerState(ERasterizerState::SolidBack);
-	}
-
 
 
 	RenderCommand::EndRenderPass(ViewRenderingInfo);
@@ -629,40 +615,26 @@ void UEditorEngine::RenderOverlayPass(const int32 ViewIndex, UWorld& ViewWorld, 
 
 	RenderCommand::BeginRenderPass(PassInfo);
 
-	if (bShowEditorOverlay && SettingsPanel->GetSettings().bDrawBatchLine && !SettingsPanel->GetSettings().bDepthView)
+	const FEditorSettings& Settings = SettingsPanel->GetSettings();
+
+	// 라인 배처는 매 프레임 한 번만 비우고 한 번만 그린다.
+	if (bShowEditorOverlay && Settings.bDrawBoundingBox && !Settings.bDepthView)
 	{
-		// 라인 배처는 매 프레임 한 번만 비우고 한 번만 그린다.
-		// 바운딩박스는 그 안에 쌓이는 여러 항목 중 하나일 뿐이다.
 		LineBatcher->BeginFrame();
-
-		if (SettingsPanel->GetSettings().bDrawBoundingBox)
-		{
-			LineBatcher->BuildVertexBuffer(ViewWorld);
-			ViewWorld.GetPathTracker().OnRender(LineBatcher.get());
-		}
-
-		// 선택된 액터가 라이트면 원뿔을 같이 쌓는다
-		if (Gizmo->GetTarget())
-		{
-			if (ALightActor* LightActor = Cast<ALightActor>(Gizmo->GetTarget()->GetOwner()))
-			{
-				LightActor->GetSpotLightComponent()->DrawDebug(LineBatcher.get());
-			}
-		}
-
+		LineBatcher->BuildVertexBuffer(ViewWorld);
 		LineBatcher->OnRender(ViewProjection);
 	}
 
-	//그리드
-	//TODO : 그리드도 안개가 적용되어야하나..?
-	if (bShowEditorOverlay && SettingsPanel->GetSettings().bDrawBatchLine)
+	// Grid는 후처리(안개·FXAA)가 끝난 뒤 합성하는 에디터 표시라 안개를 적용하지 않는다.
+	// 원근은 픽셀 셰이더 Grid, 직교는 선 Grid를 쓴다 (언리얼 에디터와 같은 구분).
+	if (bShowEditorOverlay && Settings.bDrawGrid)
 	{
 		const EGridPlane GridPlane = MultipleViewportsAdapter.GetGridPlane(ViewIndex);
 
-		if (SettingsPanel->GetSettings().bDrawPSGrid && !MultipleViewportsAdapter.IsOrthographic(ViewIndex))
+		if (!MultipleViewportsAdapter.IsOrthographic(ViewIndex))
 		{
 			GridRenderer->OnRenderPSGrid(
-				ViewProjection, ViewCameraLocation, SettingsPanel->GetSettings(), PassInfo.ViewportSetting
+				ViewProjection, ViewCameraLocation, Settings, PassInfo.ViewportSetting
 			);
 		}
 		else
@@ -672,7 +644,7 @@ void UEditorEngine::RenderOverlayPass(const int32 ViewIndex, UWorld& ViewWorld, 
 				ViewCameraLocation,
 				ViewCameraForward,
 				GridPlane,
-				static_cast<float>(SettingsPanel->GetSettings().GridSpacing),
+				static_cast<float>(Settings.GridSpacing),
 				!MultipleViewportsAdapter.IsOrthographic(ViewIndex) ||
 				MultipleViewportsAdapter.GetCameraPreset(ViewIndex) == EMultipleViewportsCameraPreset::OrthographicView,
 				PassInfo.ViewportSetting
@@ -730,7 +702,7 @@ void UEditorEngine::RenderOverlayPass(const int32 ViewIndex, UWorld& ViewWorld, 
 
 	RenderCommand::ClearDepthStencil(PassInfo.DepthStencil.Texture);
 
-	if (SettingsPanel->GetSettings().bShowUUID)
+	if (Settings.bShowUUID)
 	{
 		for (AActor* Actor : ViewWorld.GetPersistentLevel()->GetActors())
 		{

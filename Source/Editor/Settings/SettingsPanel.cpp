@@ -33,69 +33,73 @@ void FSettingsPanel::OnRender()
 	ImGui::SetNextWindowSize(ImVec2(400, 300), ImGuiCond_FirstUseEver);
 	ImGui::Begin("Settings");
 
+	// 슬라이더 폭을 창 전체에서 같게 맞춘다
+	ImGui::PushItemWidth(200.0f);
+
 	//////////////////////////////////////////////////////////
 
-	// 렌더링 옵션 (Toggles)
+	// 화면에 무엇을 그릴지 (언리얼의 Show 플래그)
+	ImGui::SeparatorText("Show");
+
+	ImGui::Checkbox("Primitives", &Settings.bDrawPrimitives);
+	ImGui::Checkbox("Bounding Boxes", &Settings.bDrawBoundingBox);
+	ImGui::Checkbox("Object UUID", &Settings.bShowUUID);
+	ImGui::Checkbox("Grid", &Settings.bDrawGrid);
+	ImGui::Checkbox("Exponential Height Fog", &Settings.bExponentialHeightFog);
+
+	//////////////////////////////////////////////////////////
+
+	ImGui::Dummy(ImVec2(0.0f, SectionGap));
 	ImGui::SeparatorText("Rendering");
 
 	ImGui::TextDisabled("Fill mode is configured per viewport.");
-	ImGui::Checkbox("Draw Primitives", &Settings.bDrawPrimitives);
-	ImGui::Checkbox("Draw Bounding Box", &Settings.bDrawBoundingBox);
-	ImGui::Checkbox("Show Object UUID", &Settings.bShowUUID);
 	ImGui::Checkbox("FXAA", &Settings.bEnableFXAA);
 	ImGui::Checkbox("Depth View", &Settings.bDepthView);
-	ImGui::Checkbox("Exponential Height Fog", &Settings.bExponentialHeightFog);
+
 	//////////////////////////////////////////////////////////
 
 	ImGui::Dummy(ImVec2(0.0f, SectionGap));
 	ImGui::SeparatorText("Grid");
 
-	ImGui::Checkbox("Draw Batch Line / Grid", &Settings.bDrawBatchLine);
-	ImGui::Checkbox("Draw PS Grid", &Settings.bDrawPSGrid);
-
-	ImGui::SetNextItemWidth(200.0f);
-	ImGui::SliderInt("Grid Spacing", &Settings.GridSpacing, 1, 100);
+	ImGui::BeginDisabled(!Settings.bDrawGrid);
+	ImGui::SliderInt("Spacing", &Settings.GridSpacing, 1, 100);
+	ImGui::EndDisabled();
 
 	//////////////////////////////////////////////////////////
 
-	// 에디터 수치 설정 (Values)
 	ImGui::Dummy(ImVec2(0.0f, SectionGap));
-	ImGui::SeparatorText("Editor Settings");
+	ImGui::SeparatorText("Camera");
 
 	UCameraComponent* CamCom = World->GetMainCamera()->GetCameraComponent();
 
-	ImGui::SetNextItemWidth(200.0f);
-	ImGui::SliderFloat("Camera Rotate Sensitivity", &Settings.MouseSensitivity, 0.01f, 1.0f, "%.2f");
-	CamCom->SetMouseSensitivity(Settings.MouseSensitivity);
-
-	ImGui::SetNextItemWidth(200.0f);
-	ImGui::SliderFloat("Camera Speed", &Settings.CameraSpeed, 0.1f, 10.0f, "%.2f");
+	ImGui::SliderFloat("Move Speed", &Settings.CameraSpeed, 0.1f, 10.0f, "%.2f");
 	CamCom->SetMoveSpeed(Settings.CameraSpeed);
+
+	ImGui::SliderFloat("Rotate Sensitivity", &Settings.MouseSensitivity, 0.01f, 1.0f, "%.2f");
+	CamCom->SetMouseSensitivity(Settings.MouseSensitivity);
 
 	//////////////////////////////////////////////////////////
 
 	ImGui::Dummy(ImVec2(0.0f, SectionGap));
-	ImGui::SeparatorText("Load Settings");
+	ImGui::Separator();
 
-	if (ImGui::Button("Load Settings"))
-	{
-		LoadSettings();
-	}
-
-	if (ImGui::IsItemHovered())
-	{
-		ImGui::SetTooltip("Load settings from editor.ini");
-	}
-
-	ImGui::SameLine();
-
-	if (ImGui::Button("Save Settings"))
+	if (ImGui::Button("Save"))
 	{
 		SaveSettings();
 	}
+	ImGui::SetItemTooltip("Save settings to editor.ini");
+
+	ImGui::SameLine();
+
+	if (ImGui::Button("Load"))
+	{
+		LoadSettings();
+	}
+	ImGui::SetItemTooltip("Load settings from editor.ini");
 
 	//////////////////////////////////////////////////////////
 
+	ImGui::PopItemWidth();
 	ImGui::End();
 }
 
@@ -112,20 +116,28 @@ bool FSettingsPanel::SaveSettings() const
 		return false;
 	}
 
-	File << "[Rendering]\n";
-	File << "Wireframe=" << Settings.bWireframe << "\n";
+	// 섹션은 Settings 패널의 섹션과 같은 순서로 쓴다
+	File << "[Show]\n";
 	File << "DrawPrimitives=" << Settings.bDrawPrimitives << "\n";
 	File << "DrawBoundingBox=" << Settings.bDrawBoundingBox << "\n";
 	File << "ShowUUID=" << Settings.bShowUUID << "\n";
-	File << "DrawBatchLine=" << Settings.bDrawBatchLine << "\n";
-	File << "DrawPSGrid=" << Settings.bDrawPSGrid << "\n";
-	File << "EnableFXAA=" << Settings.bEnableFXAA << "\n";
+	File << "DrawGrid=" << Settings.bDrawGrid << "\n";
+	File << "ExponentialHeightFog=" << Settings.bExponentialHeightFog << "\n";
 	File << "\n";
 
-	File << "[Editor]\n";
+	File << "[Rendering]\n";
+	File << "Wireframe=" << Settings.bWireframe << "\n";
+	File << "EnableFXAA=" << Settings.bEnableFXAA << "\n";
+	File << "DepthView=" << Settings.bDepthView << "\n";
+	File << "\n";
+
+	File << "[Grid]\n";
+	File << "GridSpacing=" << Settings.GridSpacing << "\n";
+	File << "\n";
+
+	File << "[Camera]\n";
 	File << "CameraMoveSpeed=" << Settings.CameraSpeed << "\n";
 	File << "CameraRotateSensitivity=" << Settings.MouseSensitivity << "\n";
-	File << "GridSpacing=" << Settings.GridSpacing << "\n";
 	File << "\n";
 
 	File << "[MultipleViewports]\n";
@@ -234,17 +246,20 @@ bool FSettingsPanel::LoadSettings()
                         RotationComponentMasks[Index] |= 1 << 3;
                     }
                 }
-                if (Key == "Wireframe") Settings.bWireframe = std::stoi(ValueStr);
-				else if (Key == "DrawPrimitives") Settings.bDrawPrimitives = std::stoi(ValueStr);
+                if (Key == "DrawPrimitives") Settings.bDrawPrimitives = std::stoi(ValueStr);
 				else if (Key == "DrawBoundingBox") Settings.bDrawBoundingBox = std::stoi(ValueStr);
 				else if (Key == "ShowUUID") Settings.bShowUUID = std::stoi(ValueStr);
-				else if (Key == "DrawBatchLine") Settings.bDrawBatchLine = std::stoi(ValueStr);
-				else if (Key == "DrawPSGrid") Settings.bDrawPSGrid = std::stoi(ValueStr);
+				else if (Key == "DrawGrid") Settings.bDrawGrid = std::stoi(ValueStr);
+				else if (Key == "ExponentialHeightFog") Settings.bExponentialHeightFog = std::stoi(ValueStr);
+
+				else if (Key == "Wireframe") Settings.bWireframe = std::stoi(ValueStr);
 				else if (Key == "EnableFXAA") Settings.bEnableFXAA = std::stoi(ValueStr);
+				else if (Key == "DepthView") Settings.bDepthView = std::stoi(ValueStr);
+
+				else if (Key == "GridSpacing") Settings.GridSpacing = std::stoi(ValueStr);
 
 				else if (Key == "CameraMoveSpeed") Settings.CameraSpeed = std::stof(ValueStr);
 				else if (Key == "CameraRotateSensitivity") Settings.MouseSensitivity = std::stof(ValueStr);
-				else if (Key == "GridSpacing") Settings.GridSpacing = std::stof(ValueStr);
 				else if (Key == "Horizontal") Settings.MultipleViewportsHorizontal = std::stof(ValueStr);
 				else if (Key == "Vertical") Settings.MultipleViewportsVertical = std::stof(ValueStr);
 				else if (Key == "Layout") Settings.bMultipleViewportsSingle = ValueStr == "Single";

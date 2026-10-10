@@ -142,51 +142,6 @@ void FEditorControlsPanel::OnRender()
 
 	//////////////////////////////////////////////////////
 
-	ImGui::Dummy(ImVec2(0.0f, SectionGap));
-	ImGui::SeparatorText("Path Tracker");
-
-	ImGui::TextDisabled("Recording");
-
-	if (ImGui::BeginTable("RecordingControls", 3))
-	{
-		ImGui::TableNextRow();
-
-		ImGui::TableSetColumnIndex(0);
-		if (ImGui::Button("Start", ImVec2(-1, 0)))
-			World->GetPathTracker().SetPathRenderingEnabled(true);
-
-		ImGui::TableSetColumnIndex(1);
-		if (ImGui::Button("Stop", ImVec2(-1, 0)))
-			World->GetPathTracker().SetPathRenderingEnabled(false);
-
-		ImGui::TableSetColumnIndex(2);
-		if (ImGui::Button("Clear", ImVec2(-1, 0)))
-			World->GetPathTracker().ClearPath();
-
-		ImGui::EndTable();
-	}
-
-	ImGui::Dummy(ImVec2(0.0f, SubsectionGap));
-
-	ImGui::TextDisabled("Replay");
-
-	if (ImGui::BeginTable("ReplayControls", 2))
-	{
-		ImGui::TableNextRow();
-
-		ImGui::TableSetColumnIndex(0);
-		if (ImGui::Button("Play", ImVec2(-1, 0)))
-			World->GetPathTracker().SetPlaybackEnabled(true);
-
-		ImGui::TableSetColumnIndex(1);
-		if (ImGui::Button("Stop", ImVec2(-1, 0)))
-			World->GetPathTracker().SetPlaybackEnabled(false);
-
-		ImGui::EndTable();
-	}
-
-	//////////////////////////////////////////////////////
-
 	ImGui::End();
 }
 

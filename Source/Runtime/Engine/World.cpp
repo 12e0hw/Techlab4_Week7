@@ -93,8 +93,6 @@ AActor* UWorld::SpawnActor(UClass* Class, FName InName, const FTransform* Transf
 			Scene.AddPrimitive(Primitive);
 		else if (UExponentialHeightFogComponent* Fog = Cast<UExponentialHeightFogComponent>(Component))
 			Scene.AddFogInfo(Fog->GetUUID(), Fog->GetFogInfo());
-		else if (UFireBallComponent* FireBall = Cast<UFireBallComponent>(Component))
-			Scene.RegisterFireBall(FireBall);
 	}
 
 	// 4. Level->Actors에 등록
@@ -126,11 +124,6 @@ void UWorld::Tick(float DeltaTime)
 			SCOPE_CYCLE_COUNTER(STAT_ActorTick);
 			// 모든 Actor를 도는 대신 등록된 Tick 함수(메인 카메라 포함)만 실행한다.
 			TickTaskManager.RunAllTickGroups(DeltaTime);
-
-			for (ULevel* Level : Levels)
-			{
-				PathTracker.Tick(Level->GetActors(), DeltaTime);
-			}
 		}
 	}
 
@@ -144,10 +137,6 @@ void UWorld::ClearWorld()
 	{
 		BeginPlayList.Dequeue();
 	}
-
-	PathTracker.SetPlaybackEnabled(false);
-	PathTracker.SetPathRenderingEnabled(false);
-	PathTracker.ClearPath();
 
 	// 액터를 지우기 전에 렌더 프록시와 틱 등록부터 푼다. ClearActors는 액터를 delete만 하므로,
 	// 그대로 두면 지워진 컴포넌트를 가리키는 프록시가 FScene에 남아 다음 프레임에 터진다.
@@ -522,9 +511,6 @@ bool UWorld::DestroyActor(AActor* Actor)
 
 	BeginPlayList = std::move(NewBeginPlayList);
 
-	// 2. PathTracker에서 제거
-	PathTracker.OnObjectDestroyed(Actor);
-
 	//// 3. PrimitiveComponents에서 제거
 	//for (UActorComponent* Component : Actor->Components)
 	//{
@@ -747,8 +733,6 @@ void UWorld::PostDuplicate(bool bDuplicateForPIE)
 				Scene.AddPrimitive(Primitive);
 			else if (UExponentialHeightFogComponent* Fog = Cast<UExponentialHeightFogComponent>(Component))
 				Scene.AddFogInfo(Fog->GetUUID(), Fog->GetFogInfo());
-			else if (UFireBallComponent* FireBall = Cast<UFireBallComponent>(Component))
-				Scene.RegisterFireBall(FireBall);
 		}
 
 		BeginPlayList.Enqueue(Actor);   // Tick 등록은 BeginPlay에서 함
