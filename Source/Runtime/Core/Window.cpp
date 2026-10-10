@@ -57,12 +57,22 @@ bool FWindow::Create(HINSTANCE hInstance, int InWidth, int InHeight, const wchar
 
 	DWORD style = bBorderless ? WS_POPUP : WS_OVERLAPPEDWINDOW;
 
-	// 원하는 클라이언트 크기 -> 실제 윈도우 크기로 보정
+	// 원하는 클라이언트 크기 -> 실제 윈도우 크기로 보정 (테두리 두께도 배율을 따른다)
 	RECT rc = { 0, 0, Width, Height };
-	AdjustWindowRect(&rc, style, FALSE);   // FALSE = 메뉴 없음
+	AdjustWindowRectExForDpi(&rc, style, FALSE, 0, GetDpiForSystem());   // FALSE = 메뉴 없음
 	int WindowWidth = rc.right - rc.left;
 	int WindowHeight = rc.bottom - rc.top;
 
+	// 배율을 곱한 크기가 화면보다 크면 작업 영역(작업 표시줄 제외)에 맞춘다
+	if (!bBorderless)
+	{
+		RECT WorkArea;
+		if (SystemParametersInfo(SPI_GETWORKAREA, 0, &WorkArea, 0))
+		{
+			WindowWidth = std::min(WindowWidth, static_cast<int>(WorkArea.right - WorkArea.left));
+			WindowHeight = std::min(WindowHeight, static_cast<int>(WorkArea.bottom - WorkArea.top));
+		}
+	}
 
 	hWnd = CreateWindowEx(
 		0, CLASS_NAME, Title,
@@ -72,6 +82,12 @@ bool FWindow::Create(HINSTANCE hInstance, int InWidth, int InHeight, const wchar
 
 	if (hWnd == nullptr)
 		return false;
+
+	// 작업 영역에 맞춰 줄었을 수 있으니 실제 클라이언트 크기로 맞춘다 (스왑체인이 이 크기로 만들어진다)
+	RECT Client;
+	GetClientRect(hWnd, &Client);
+	Width = Client.right - Client.left;
+	Height = Client.bottom - Client.top;
 
 	// 초기화(스플래시)가 끝난 뒤 Show()로 띄운다.
 	return true;
@@ -213,6 +229,16 @@ LRESULT FWindow::HandleMessage(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam
 				bIsResized = true;
 		}
 		break;
+
+	// 배율이 다른 모니터로 옮기면 Windows가 제안한 크기로 바꾼다. 이어서 오는 WM_SIZE가 스왑체인 리사이즈를 요청한다.
+	case WM_DPICHANGED:
+	{
+		const RECT* Suggested = reinterpret_cast<const RECT*>(lParam);
+		SetWindowPos(hWnd, nullptr, Suggested->left, Suggested->top,
+			Suggested->right - Suggested->left, Suggested->bottom - Suggested->top,
+			SWP_NOZORDER | SWP_NOACTIVATE);
+		break;
+	}
 
 	case WM_ENTERSIZEMOVE:
 		bIsInSizeMove = true;

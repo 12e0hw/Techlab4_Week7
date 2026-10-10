@@ -63,9 +63,11 @@ bool FEngineLoop::PreInit(HINSTANCE hInstance, UClass* EngineClass)
 	FSplashScreen::SetText(L"Initializing Renderer...");
 	FSplashScreen::SetProgress(0.1f);
 
-	// 0이면 주 모니터 해상도
-	const uint32 Width = Config.Width != 0 ? Config.Width : static_cast<uint32>(GetSystemMetrics(SM_CXSCREEN));
-	const uint32 Height = Config.Height != 0 ? Config.Height : static_cast<uint32>(GetSystemMetrics(SM_CYSCREEN));
+	// Config 크기는 100% 배율 기준이라 주 모니터 배율(예: 150%)만큼 키운다.
+	// 0이면 주 모니터 해상도 (DPI Aware라 이미 실제 픽셀이다)
+	const float DpiScale = static_cast<float>(GetDpiForSystem()) / USER_DEFAULT_SCREEN_DPI;
+	const uint32 Width = Config.Width != 0 ? static_cast<uint32>(Config.Width * DpiScale + 0.5f) : static_cast<uint32>(GetSystemMetrics(SM_CXSCREEN));
+	const uint32 Height = Config.Height != 0 ? static_cast<uint32>(Config.Height * DpiScale + 0.5f) : static_cast<uint32>(GetSystemMetrics(SM_CYSCREEN));
 
 	RenderDevice = MakeUnique<FRenderDevice>();
 	RenderCommand::Init(RenderDevice.get());

@@ -107,15 +107,15 @@ bool FImGuiRenderer::Init(HWND WindowHandle, ID3D11Device* Device, ID3D11DeviceC
 
 	ApplyDefaultStyle();
 
-	//// 프로세스가 Per-Monitor DPI Aware라 창이 실제 픽셀 크기로 잡힌다. 모니터 배율(예: 150%)만큼 UI를 키운다.
-	//// 1.92+ 동적 폰트 아틀라스라 FontScaleDpi로 키워도 글자가 해당 크기로 다시 래스터화되어 흐려지지 않는다.
-	//const float DpiScale = ImGui_ImplWin32_GetDpiScaleForHwnd(WindowHandle);
-	//ImGuiStyle& Style = ImGui::GetStyle();
-	//Style.ScaleAllSizes(DpiScale);     // 패딩·간격·스크롤바 등 크기 (ApplyDefaultStyle 이후에 적용)
-	//Style.FontScaleDpi = DpiScale;     // 글자 크기
-	//// 다른 배율의 모니터로 창을 옮기면 글자 배율을 자동으로 갱신한다.
-	//io.ConfigDpiScaleFonts = true;
-	//io.ConfigDpiScaleViewports = true;
+	// 프로세스가 Per-Monitor DPI Aware라 창이 실제 픽셀 크기로 잡힌다. 모니터 배율(예: 150%)만큼 UI를 키운다.
+	// 1.92+ 동적 폰트 아틀라스라 FontScaleDpi로 키워도 글자가 해당 크기로 다시 래스터화되어 흐려지지 않는다.
+	const float DpiScale = ImGui_ImplWin32_GetDpiScaleForHwnd(WindowHandle);
+	ImGuiStyle& Style = ImGui::GetStyle();
+	Style.ScaleAllSizes(DpiScale);     // 패딩·간격·스크롤바 등 크기 (ApplyDefaultStyle 이후에 적용)
+	Style.FontScaleDpi = DpiScale;     // 글자 크기
+	// 다른 배율의 모니터로 창을 옮기면 글자 배율을 자동으로 갱신한다.
+	io.ConfigDpiScaleFonts = true;
+	io.ConfigDpiScaleViewports = true;
 
 	return true;
 }
