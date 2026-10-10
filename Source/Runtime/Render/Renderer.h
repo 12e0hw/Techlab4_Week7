@@ -5,6 +5,7 @@
 #include "Text/Font.h"
 
 #include "RenderingInfo.h"
+#include "ViewMode.h"
 #include "Occlusion/GPUOcclusion.h"
 
 constexpr uint32 ObjectSlotBytes = 256;
@@ -42,6 +43,8 @@ class FRenderer
 {
 public:
 	bool Init();
+
+	void SetViewMode(const FViewRenderMode& Mode);
 
 	// 기존 단일 카메라의 ViewProjection으로 렌더 큐 전체를 그린다.
 	void RenderAll(FRenderQueue& InQueue, UCameraComponent* CameraComponent);
@@ -90,6 +93,8 @@ private:
 	bool bObjectConstantsPrepared = false;
 	UMaterial* LastMaterial;
 	UStaticMesh* LastMesh;
+
+	FShaderProgram* ViewModeShader = nullptr;
 
 	// MeasureOpaqueOcclusion 전용. 처음 측정할 때 만들고 이후 재사용한다.
 	TArray<ComPtr<ID3D11Query>> OcclusionQueries;

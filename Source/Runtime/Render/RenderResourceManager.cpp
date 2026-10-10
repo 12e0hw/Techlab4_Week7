@@ -84,17 +84,32 @@ void FRenderResourceManager::LoadOrCompileShader(const FString& Path, const FStr
 
 }
 
+namespace
+{
+	const FString UberLitPath = "Resources/Shader/UberLit.hlsl";
+	const char* const Digits[] = { "0", "1", "2" };
+}
+
+FString FRenderResourceManager::GetUberLitSuffix(const FViewRenderMode& Mode)
+{
+	if (Mode.ViewMode != EViewMode::Lit)
+		return "_UNLIT";
+	return FString("_LM") + Digits[static_cast<int32>(Mode.LightModel)]
+		+ "_SM" + Digits[static_cast<int32>(Mode.ShadingModel)];
+}
+
+FShaderProgram* FRenderResourceManager::GetUberLitProgram(const FViewRenderMode& Mode)
+{
+	return GetShaderProgram(UberLitPath + GetUberLitSuffix(Mode));
+}
+
 void FRenderResourceManager::LoadUberLitPermutations()
 {
-	const FString Path = "Resources/Shader/UberLit.hlsl";
-
 	const D3D_SHADER_MACRO UnlitDefines[] = {
 		{ "UNLIT", "1" },
 		{ nullptr, nullptr }          // 배열 끝
 	};
-	LoadOrCompileShader(Path, "_UNLIT", UnlitDefines);
-
-	const char* Digits[] = { "0", "1", "2" };
+	LoadOrCompileShader(UberLitPath, GetUberLitSuffix({ EViewMode::Unlit }), UnlitDefines);
 
 	for (int32 LM = 0; LM < 3; ++LM)          // Lambert, Phong, Blinn-Phong
 	{
@@ -106,8 +121,8 @@ void FRenderResourceManager::LoadUberLitPermutations()
 				{ "SHADING_MODEL",  Digits[SM] },
 				{ nullptr, nullptr }
 			};
-			const FString Suffix = FString("_LM") + Digits[LM] + "_SM" + Digits[SM];
-			LoadOrCompileShader(Path, Suffix, Defines);
+			const FViewRenderMode Mode{ EViewMode::Lit, static_cast<ELightModel>(LM), static_cast<EShadingModel>(SM) };
+			LoadOrCompileShader(UberLitPath, GetUberLitSuffix(Mode), Defines);
 		}
 	}
 }

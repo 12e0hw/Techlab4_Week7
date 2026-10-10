@@ -76,9 +76,7 @@ public:
     void SetEditorViewIndex(int32 Index) { if (Index >= 0 && Index < 4) EditorViewIndex = Index; }
     // View별 뷰 모드(Lit·Unlit·Wireframe과 Lit 세부 옵션)를 저장하고 조회한다.
     void SetViewRenderMode(int32 Index, const FViewRenderMode& Value) { if (Index >= 0 && Index < MaxViewCount) ViewRenderModes[Index] = Value; }
-    FViewRenderMode GetViewRenderMode(int32 Index) const { return Index >= 0 && Index < MaxViewCount ? ViewRenderModes[Index] : FViewRenderMode{}; }
-    bool IsViewWireframe(int32 Index) const { return Index >= 0 && Index < MaxViewCount && ViewRenderModes[Index].ViewMode == EViewMode::Wireframe; }
-    // 현재 마우스가 올라간 View 인덱스를 반환한다.
+    FViewRenderMode GetViewRenderMode(int32 Index) const { return Index >= 0 && Index < MaxViewCount ? ViewRenderModes[Index] : FViewRenderMode{}; }    // 현재 마우스가 올라간 View 인덱스를 반환한다.
     int32 GetHoveredViewIndex() const { return InputState.HoveredViewIndex; }
     // 우클릭 입력을 Capture 중인 View 인덱스를 반환한다.
     int32 GetCapturedViewIndex() const { return InputState.CapturedViewIndex; }

@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Shader.h"
+#include "ViewMode.h"
 
 class FRenderResourceManager
 {
@@ -22,8 +23,9 @@ public:
 	static void Shutdown();
 
 	static FShaderProgram* GetShaderProgram(const FString& InPath);
+	static FShaderProgram* GetUberLitProgram(const FViewRenderMode& Mode);
 private:
-	// Path + PermutationSuffix가 GetShaderProgram 키가 된다.
+	static FString GetUberLitSuffix(const FViewRenderMode& Mode);
 	void LoadOrCompileShader(const FString& Path, const FString& PermutationSuffix = "", const D3D_SHADER_MACRO* Defines = nullptr);
 	void LoadUberLitPermutations();
 

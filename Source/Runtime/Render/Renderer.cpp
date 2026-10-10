@@ -9,6 +9,7 @@
 #include "Engine/PrimitiveSceneProxy.h"
 
 #include "RenderCommand.h"
+#include "RenderResourceManager.h"
 
 #include "Camera/CameraComponent.h"
 
@@ -450,10 +451,25 @@ void FRenderer::EndObjectConstants()
 	}
 }
 
+void FRenderer::SetViewMode(const FViewRenderMode& Mode)
+{
+	ViewModeShader = FRenderResourceManager::GetUberLitProgram(Mode);
+}
+
 // Material마다 Shader/Texture/Sampler/State 꽂기
 void FRenderer::BindMaterial(UMaterial* material)
 {
-	RenderCommand::BindShaderProgram(material->Shader);
+	// 스태틱 메시 머티리얼만 조명 대상이다. 빌보드·파티클(ParticleSubUV)은 자기 셰이더를 그대로 쓴다.
+	if (material->ParamLayout == EMaterialParamLayout::StaticMesh)
+	{
+		if (!ViewModeShader)
+			SetViewMode(FViewRenderMode{});
+		RenderCommand::BindShaderProgram(ViewModeShader);
+	}
+	else
+	{
+		RenderCommand::BindShaderProgram(material->Shader);
+	}
 	RenderCommand::SetBlendState(material->BlendState);
 	// 반투명은 뒤에 그려지는 Grid·다른 반투명을 가리지 않도록 깊이를 쓰지 않는다.
 	const bool bTranslucent = material->BlendState != EBlendState::Opaque;
