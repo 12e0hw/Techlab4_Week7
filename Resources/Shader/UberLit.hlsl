@@ -34,6 +34,53 @@ cbuffer Worldconstants : register(b2)
     matrix NormalMatrix; // World의 역전치
 };
 
+// FLightingConstants (LightInfo.h)
+#define NUM_POINT_LIGHT 4
+#define NUM_SPOT_LIGHT 4
+
+struct FAmbientLightInfo
+{
+    float3 Color;
+    float Padding;
+};
+
+struct FDirectionalLightInfo
+{
+    float3 Color;
+    float Padding0;
+    float3 Direction;
+    float Padding1;
+};
+
+struct FPointLightInfo
+{
+    float3 Color;
+    float AttenuationRadius;
+    float3 Position;
+    float Padding;
+};
+
+struct FSpotLightInfo
+{
+    float3 Color;
+    float AttenuationRadius;
+    float3 Position;
+    float CosInnerCone;
+    float3 Direction;
+    float CosOuterCone;
+};
+
+cbuffer Lighting : register(b3)
+{
+    FAmbientLightInfo Ambient;
+    FDirectionalLightInfo Directional;
+    FPointLightInfo PointLights[NUM_POINT_LIGHT];
+    FSpotLightInfo SpotLights[NUM_SPOT_LIGHT];
+    uint NumPointLights;
+    uint NumSpotLights;
+    float2 LightingPadding;
+};
+
 struct VS_INPUT
 {
     float3 p : POSITION; // Input position from vertex buffer
@@ -76,8 +123,7 @@ float4 mainPS(PS_INPUT input) : SV_TARGET
 #if UNLIT
     return float4(albedo.rgb, alpha);
 #else
-    float3 N = normalize(input.normal);
-    float3 V = normalize(CameraPosition - input.worldPos);
-    return float4(saturate(dot(N, V)).xxx, alpha);
+    // [임시] Phase 5 확인용. Phase 6에서 조명 계산으로 바꾼다.
+    return float4(Ambient.Color, alpha);
 #endif
 }
