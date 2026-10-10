@@ -90,6 +90,8 @@ public:
     FVector GetEngineCameraLocation(int32 ViewIndex) const;
     // 지정 View의 카메라 Forward를 엔진 FVector로 계산해 반환한다.
     FVector GetEngineCameraForward(int32 ViewIndex) const;
+    // 지정 View의 카메라 Up(화면 위쪽)을 엔진 FVector로 계산해 반환한다.
+    FVector GetEngineCameraUp(int32 ViewIndex) const;
     // Core Billboard 계산 결과를 엔진 월드 행렬로 변환한다.
     FMatrix BuildEngineBillboardMatrix(int32 ViewIndex, const FVector& WorldPosition, float Width, float Height) const;
     // 지정 View가 직교 투영인지 반환한다.

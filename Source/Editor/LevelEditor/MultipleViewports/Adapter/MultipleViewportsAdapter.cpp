@@ -590,6 +590,12 @@ FVector FMultipleViewportsAdapter::GetEngineCameraForward(const int32 ViewIndex)
     return NormalizedOrZero(CameraForward(GetEffectiveCamera(ViewIndex).Transform.Rotation));
 }
 
+FVector FMultipleViewportsAdapter::GetEngineCameraUp(const int32 ViewIndex) const
+{
+    assert(ViewIndex >= 0 && ViewIndex < MaxViewCount);
+    return NormalizedOrZero(CameraUp(GetEffectiveCamera(ViewIndex).Transform.Rotation));
+}
+
 // 위치·크기·View 카메라로 엔진 규약의 Billboard 행렬을 계산한다.
 FMatrix FMultipleViewportsAdapter::BuildEngineBillboardMatrix(const int32 ViewIndex, const FVector& WorldPosition, const float Width, const float Height) const
 {

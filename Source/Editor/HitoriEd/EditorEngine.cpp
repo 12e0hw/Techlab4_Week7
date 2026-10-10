@@ -706,16 +706,29 @@ void UEditorEngine::RenderOverlayPass(const int32 ViewIndex, UWorld& ViewWorld, 
 
 	if (Settings.bShowUUID)
 	{
+		// 월드 +Z가 아니라 화면 위쪽으로 띄워야 Top·Bottom처럼 Z축을 따라 보는 View에서도 물체를 가리지 않는다.
+		const FVector ScreenUp = MultipleViewportsAdapter.GetEngineCameraUp(ViewIndex);
+
 		for (AActor* Actor : ViewWorld.GetPersistentLevel()->GetActors())
 		{
 			if (!Actor)
 				continue;
 
 			FBox ActorBounds;
-			Actor->TryGetActorBounds(ActorBounds);
-			UUIDLocation.X = (ActorBounds.Min.X + ActorBounds.Max.X) * 0.5f;
-			UUIDLocation.Y = (ActorBounds.Min.Y + ActorBounds.Max.Y) * 0.5f;
-			UUIDLocation.Z = ActorBounds.Max.Z + 0.5f;
+			if (!Actor->TryGetActorBounds(ActorBounds))
+			{
+				const FVector ActorLocation = Actor->GetActorLocation();
+				ActorBounds.Min = ActorLocation;
+				ActorBounds.Max = ActorLocation;
+			}
+
+			const FVector Center = (ActorBounds.Min + ActorBounds.Max) * 0.5f;
+			const FVector HalfExtent = (ActorBounds.Max - ActorBounds.Min) * 0.5f;
+			// 바운드 박스가 화면 위쪽으로 뻗은 길이만큼 올린 뒤 여백을 더한다.
+			const float ExtentAlongUp = std::fabs(ScreenUp.X) * HalfExtent.X
+				+ std::fabs(ScreenUp.Y) * HalfExtent.Y
+				+ std::fabs(ScreenUp.Z) * HalfExtent.Z;
+			UUIDLocation = Center + ScreenUp * (ExtentAlongUp + 0.5f);
 
 			FString Text =
 				"UUID : " + std::to_string(Actor->GetUUID());
