@@ -21,6 +21,7 @@ void FRenderResourceManager::ScanShaders(const fs::path& ShaderRoot)
 	{
 		if (!Entry.is_regular_file()) continue;
 		if (Entry.path().extension() != ".hlsl") continue;
+		if (Entry.path().filename() == "UberLit.hlsl") continue;
 
 		FString Path = Entry.path().generic_string();
 		LoadOrCompileShader(Path);
@@ -48,16 +49,18 @@ FShaderProgram* FRenderResourceManager::GetShaderProgram(const FString& InPath)
 	return nullptr;
 }
 
-void FRenderResourceManager::LoadOrCompileShader(const FString& Path)
-{ 
+void FRenderResourceManager::LoadOrCompileShader(const FString& Path, const FString& PermutationSuffix, const D3D_SHADER_MACRO* Defines)
+{
+	const FString Key = Path + PermutationSuffix;
+
 	FString VSCSOPath;
 	FString PSCSOPath;
-	FShaderByteCode VSCode = RenderUtil::GetOrCompile(Path, "mainVS", EShaderType::Vertex, VSCSOPath);
-	FShaderByteCode PSCode = RenderUtil::GetOrCompile(Path, "mainPS", EShaderType::Pixel, PSCSOPath);
+	FShaderByteCode VSCode = RenderUtil::GetOrCompile(Path, "mainVS", EShaderType::Vertex, VSCSOPath, PermutationSuffix, Defines);
+	FShaderByteCode PSCode = RenderUtil::GetOrCompile(Path, "mainPS", EShaderType::Pixel, PSCSOPath, PermutationSuffix, Defines);
 
 	if (!VSCode.IsValid() || !PSCode.IsValid())
 	{
-		HTR_LOG(Error, "[Shader] compile failed: {}", Path);
+		HTR_LOG(Error, "[Shader] compile failed: {}", Key);
 		return;
 	}
 
@@ -66,7 +69,7 @@ void FRenderResourceManager::LoadOrCompileShader(const FString& Path)
 
 	if (!Vs || !Vs->IsValid() || !Ps || !Ps->IsValid())
 	{
-		HTR_LOG(Error, "[Shader] device create failed: {}", Path);
+		HTR_LOG(Error, "[Shader] device create failed: {}", Key);
 		return;
 	}
 
@@ -75,8 +78,36 @@ void FRenderResourceManager::LoadOrCompileShader(const FString& Path)
 
 	VertexShaderMap[VSCSOPath] = std::move(Vs);
 	PixelShaderMap[PSCSOPath] = std::move(Ps);
-	ShaderProgramMap[Path] = MakeUnique<FShaderProgram>(VsRaw, PsRaw);
+	ShaderProgramMap[Key] = MakeUnique<FShaderProgram>(VsRaw, PsRaw);
 
-	HTR_LOG(Info, "[Shader] loaded: {}", Path);
+	HTR_LOG(Info, "[Shader] loaded: {}", Key);
 
+}
+
+void FRenderResourceManager::LoadUberLitPermutations()
+{
+	const FString Path = "Resources/Shader/UberLit.hlsl";
+
+	const D3D_SHADER_MACRO UnlitDefines[] = {
+		{ "UNLIT", "1" },
+		{ nullptr, nullptr }          // 배열 끝
+	};
+	LoadOrCompileShader(Path, "_UNLIT", UnlitDefines);
+
+	const char* Digits[] = { "0", "1", "2" };
+
+	for (int32 LM = 0; LM < 3; ++LM)          // Lambert, Phong, Blinn-Phong
+	{
+		for (int32 SM = 0; SM < 2; ++SM)      // Gouraud, Phong
+		{
+			const D3D_SHADER_MACRO Defines[] = {
+				{ "UNLIT",          "0" },
+				{ "LIGHTING_MODEL", Digits[LM] },
+				{ "SHADING_MODEL",  Digits[SM] },
+				{ nullptr, nullptr }
+			};
+			const FString Suffix = FString("_LM") + Digits[LM] + "_SM" + Digits[SM];
+			LoadOrCompileShader(Path, Suffix, Defines);
+		}
+	}
 }
