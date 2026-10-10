@@ -68,6 +68,8 @@ bool FRenderer::Init()
 	bUsePerObjectSlots = RenderCommand::SupportsConstantBufferOffsets();
 	PerObjectCB = RenderCommand::CreateConstantBuffer(sizeof(FPerObjectConstants));
 	ViewCB = RenderCommand::CreateConstantBuffer(sizeof(FViewConstants));
+	LightingCB = RenderCommand::CreateConstantBuffer(sizeof(FLightingConstants));
+	SetLighting(FLightingConstants{});
 
 	GPUOcclusion.Init();   // 실패해도 오클루전만 못 쓸 뿐 렌더링은 된다
 
@@ -167,6 +169,7 @@ void FRenderer::DrawStaticGroups()
 	SCOPE_CYCLE_COUNTER(STAT_DrawRenderPackets);
 	// 픽셀 단위 조명이 카메라 위치를 읽으므로 PS에도 바인딩한다.
 	RenderCommand::BindConstantBuffer(0, ViewCB.get(), EShaderBindFlagBits::Vertex | EShaderBindFlagBits::Pixel);
+	RenderCommand::BindConstantBuffer(3, LightingCB.get(), EShaderBindFlagBits::Vertex | EShaderBindFlagBits::Pixel);
 
 	UMaterial* BoundMaterial = nullptr;
 	for (const FStaticDrawGroup* Group : StaticGroups)
@@ -253,6 +256,7 @@ void FRenderer::DrawPackets(uint32 Begin, uint32 End, const FMatrix& ViewProject
 	uint8 LastLODIndex = 0;
 
 	RenderCommand::BindConstantBuffer(0, ViewCB.get(), EShaderBindFlagBits::Vertex | EShaderBindFlagBits::Pixel);
+	RenderCommand::BindConstantBuffer(3, LightingCB.get(), EShaderBindFlagBits::Vertex | EShaderBindFlagBits::Pixel);
 
 
 	for (uint32 k = Begin; k < End; ++k)          // k = 정렬된 위치
@@ -352,6 +356,7 @@ FOcclusionMeasureResult FRenderer::MeasureOpaqueOcclusion(const FMatrix& ViewPro
 	}
 
 	RenderCommand::BindConstantBuffer(0, ViewCB.get(), EShaderBindFlagBits::Vertex | EShaderBindFlagBits::Pixel);
+	RenderCommand::BindConstantBuffer(3, LightingCB.get(), EShaderBindFlagBits::Vertex | EShaderBindFlagBits::Pixel);
 	if (!bUsePerObjectSlots)
 		RenderCommand::BindConstantBuffer(2, PerObjectCB.get(), EShaderBindFlagBits::Vertex);
 
@@ -462,6 +467,11 @@ void FRenderer::EndObjectConstants()
 void FRenderer::SetViewMode(const FViewRenderMode& Mode)
 {
 	ViewModeShader = FRenderResourceManager::GetUberLitProgram(Mode);
+}
+
+void FRenderer::SetLighting(const FLightingConstants& Lighting)
+{
+	RenderCommand::UpdateBufferData(LightingCB.get(), &Lighting);
 }
 
 // Material마다 Shader/Texture/Sampler/State 꽂기

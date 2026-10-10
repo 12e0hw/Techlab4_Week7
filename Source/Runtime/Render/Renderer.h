@@ -6,6 +6,7 @@
 
 #include "RenderingInfo.h"
 #include "ViewMode.h"
+#include "LightInfo.h"
 #include "Occlusion/GPUOcclusion.h"
 
 constexpr uint32 ObjectSlotBytes = 256;
@@ -64,6 +65,7 @@ public:
 	bool Init();
 
 	void SetViewMode(const FViewRenderMode& Mode);
+	void SetLighting(const FLightingConstants& Lighting);
 
 	// 기존 단일 카메라의 ViewProjection으로 렌더 큐 전체를 그린다.
 	void RenderAll(FRenderQueue& InQueue, UCameraComponent* CameraComponent);
@@ -104,6 +106,7 @@ private:
 	uint32 FirstMaterialIndex = 0;
 	TUniquePtr<FConstantBuffer> PerObjectCB;
 	TUniquePtr<FConstantBuffer> ViewCB;
+	TUniquePtr<FConstantBuffer> LightingCB;
 
 	// 모든 패킷의 World 행렬을 256바이트 칸에 한 번에 올린 버퍼. D3D11.1 오프셋 바인딩을 못 쓰면 PerObjectCB로 돌아간다.
 	TUniquePtr<FConstantBuffer> PerObjectSlotCB;
