@@ -554,7 +554,9 @@ void UEditorEngine::RenderOpaquePass(const int32 ViewIndex, const FRenderingInfo
 		? ERasterizerState::Wireframe : ERasterizerState::SolidBack;
 
 	// 렌더 루프 — 반드시 RenderAll보다 먼저
-	SkyboxRenderer->OnRender(ViewProjection, ViewCameraLocation);
+	// 직교는 시선이 모두 평행해 파노라마의 한 점만 확대되므로 하늘을 그리지 않고 지우기 색을 배경으로 쓴다.
+	if (!MultipleViewportsAdapter.IsOrthographic(ViewIndex))
+		SkyboxRenderer->OnRender(ViewProjection, ViewCameraLocation);
 	if (bDrawPrimitives)
 	{
 		RenderCommand::SetRasterizerState(SceneRasterizerState);
