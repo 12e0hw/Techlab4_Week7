@@ -1,10 +1,10 @@
 #pragma once
 
-#include "LightComponent.h"
+#include "LightComponentBase.h"
 
-class UAmbientLightComponent : public ULightComponent
+class UAmbientLightComponent : public ULightComponentBase
 {
-	DECLARE_CLASS(UAmbientLightComponent, ULightComponent)
+	DECLARE_CLASS(UAmbientLightComponent, ULightComponentBase)
 
 public:
 	UAmbientLightComponent() = default;

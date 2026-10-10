@@ -14,6 +14,10 @@ struct FExponentialHeightFogSceneInfo
 	FFogInfo FogInfo;
 };
 
+struct FLightSceneInfo
+{
+
+};
 
 class FScene
 {
@@ -27,6 +31,9 @@ public:
 	void RemoveFogInfo(uint32 Id);
 	void RemoveAllFogInfo();
 	void UpdateFogInfo(uint32 Id, const FFogInfo& FogInfo);
+
+
+
 	void UpdateAllTransforms();
 
 	void BuildBVH();

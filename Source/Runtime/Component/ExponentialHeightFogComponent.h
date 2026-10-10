@@ -25,11 +25,9 @@ public:
 	FFogInfo GetFogInfo() const;
 
 	virtual void PostEditChangeProperty(const FProperty& Property) override;
-	// 안개 높이는 액터 Z라서 이동만 해도 Scene의 복사본을 갱신해야 한다.
 	virtual void OnTransformDirty() override;
 
 private:
-	// Scene이 들고 있는 FFogInfo 복사본을 현재 값으로 덮어쓴다. 아직 Scene에 등록 전이면 아무 일도 하지 않는다.
 	void UpdateSceneFogInfo();
 
 	//포그의 밀도, 높이에 따른 감소율, 시작 거리, 최대 불투명도, 색상 등을 설정하는 변수들
