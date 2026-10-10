@@ -3,6 +3,7 @@
 #include "MaterialInterface.h"
 #include "Render/RenderStates.h"
 #include "Render/Texture2D.h"
+#include "Math/Color.h"
 
 class FShader;
 
@@ -17,7 +18,7 @@ enum class EMaterialParamLayout
 
 struct FStaticMeshMaterialParams
 {
-	FVector4 BaseColor;
+	FLinearColor BaseColor;
 	FVector2 UVOffset;
 	float bOpaque; // 1이면 PS가 알파를 1로 출력한다
 	float Padding;
@@ -39,7 +40,8 @@ public:
 	EDepthStencilState DepthStencilState = EDepthStencilState::Default;
 	ESamplerState SamplerState = ESamplerState::LinearClamp;
 
-	FVector4 BaseColor = FVector4(1, 1, 1, 1);
+	// 셰이더가 텍스처와 그대로 곱하는 Linear 값 (언리얼 머티리얼 벡터 파라미터와 같다)
+	FLinearColor BaseColor = FLinearColor(1.0f, 1.0f, 1.0f, 1.0f);
 	FVector2 UVScrollSpeed = FVector2(0.0f, 0.0f);
 
 	bool bIsInstance = false;

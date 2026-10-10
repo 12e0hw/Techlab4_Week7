@@ -460,8 +460,8 @@ namespace
 					ImGui::SetNextItemWidth(-1.0f);
 
 					// BaseColor는 셰이더가 Linear로 쓰므로 선택기에서 sRGB로 보여주고 Linear로 저장한다
-					FVector4 TempColor = Effective ? Effective->BaseColor : FVector4(1.0f, 1.0f, 1.0f, 1.0f);
-					if (ColorEditLinear("##BaseColor", &TempColor.X))
+					FLinearColor TempColor = Effective ? Effective->BaseColor : FLinearColor(1.0f, 1.0f, 1.0f, 1.0f);
+					if (ColorEditLinear("##BaseColor", &TempColor.R))
 					{
 						Override = EnsureMaterialOverride(MeshComponent, Slot, Effective, Override);
 						if (Override)

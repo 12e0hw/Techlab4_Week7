@@ -3,6 +3,7 @@
 #include "Vertex.h"
 #include "Math/BVH.h"
 #include "Math/Box.h"
+#include "Math/Color.h"
 
 // Cooked obj Data의 Section 구조체
 struct FStaticMeshSection
@@ -15,7 +16,8 @@ struct FStaticMeshSection
 struct FStaticMaterialSlot
 {
 	FString Name;
-	FVector4 BaseColor = FVector4(1, 1, 1, 1);
+	// MTL의 Kd(Linear) + d(불투명도)
+	FLinearColor BaseColor = FLinearColor(1.0f, 1.0f, 1.0f, 1.0f);
 	FString DiffuseTexturePath;
 };
 

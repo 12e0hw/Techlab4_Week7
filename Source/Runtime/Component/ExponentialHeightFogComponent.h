@@ -33,7 +33,8 @@ private:
 	float    StartDistance = 10.0;
 	float    FogCutoffDistance = 0.0f;
 	float    FogMaxOpacity = 1.0f;
-	FColor   FogColor = FColor(255, 102, 179);
+	// 셰이더가 그대로 쓰는 Linear 값 (언리얼 FogInscatteringColor와 같다). sRGB (1, 0.4, 0.7)을 디코딩한 값이다.
+	FLinearColor FogColor = FLinearColor(1.0f, 0.133f, 0.448f, 1.0f);
 
 
 };

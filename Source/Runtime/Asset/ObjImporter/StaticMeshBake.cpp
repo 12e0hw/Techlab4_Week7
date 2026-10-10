@@ -136,7 +136,7 @@ TUniquePtr<FStaticMeshData> FStaticMeshBake::ReadBaked(const FString& BinPath)
 	{
 		FStaticMaterialSlot Slot;
 		if (!ReadString(In, Slot.Name) ||
-			!ReadPod<FVector4>(In, Slot.BaseColor) ||
+			!ReadPod<FLinearColor>(In, Slot.BaseColor) ||
 			!ReadString(In, Slot.DiffuseTexturePath))
 		{
 			return nullptr;
@@ -182,7 +182,7 @@ void FStaticMeshBake::WriteBaked(const FString& BinPath, const FStaticMeshData& 
 	for (const auto& Slot : Data.MaterialSlots)
 	{
 		WriteString(Out, Slot.Name);
-		WritePod<FVector4>(Out, Slot.BaseColor);
+		WritePod<FLinearColor>(Out, Slot.BaseColor);
 		WriteString(Out, Slot.DiffuseTexturePath);
 	}
 

@@ -73,7 +73,7 @@ namespace
 				return nullptr;
 			}
 			Material->BaseColor = Slot.BaseColor;
-			if (Material->BaseColor.W < 1.0f)
+			if (Material->BaseColor.A < 1.0f)
 			{
 				Material->BlendState = EBlendState::AlphaBlend;
 				Material->DepthStencilState = EDepthStencilState::ReadOnly;

@@ -387,7 +387,7 @@ bool FObjImporter::Cook(const FObjInfo& Raw, FStaticMeshData& Out)
 	{
 		FStaticMaterialSlot CookedMtl;
 		CookedMtl.Name = RawMtl.Name;
-		CookedMtl.BaseColor.Set(RawMtl.Kd, RawMtl.D);
+		CookedMtl.BaseColor = FLinearColor(RawMtl.Kd.X, RawMtl.Kd.Y, RawMtl.Kd.Z, RawMtl.D);
 		CookedMtl.DiffuseTexturePath = RawMtl.MapKd;
 		Cooked.MaterialSlots.Add(std::move(CookedMtl));
 	}
