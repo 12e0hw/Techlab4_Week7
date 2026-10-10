@@ -3,6 +3,7 @@
 #include "Component/PrimitiveComponent.h"
 #include "Component/StaticMeshComponent.h"
 #include "Render/Mesh.h"
+#include "Render/Renderer.h"
 #include "Engine/Scene.h"
 
 FPrimitiveSceneProxy::~FPrimitiveSceneProxy()
@@ -29,6 +30,7 @@ void FPrimitiveSceneProxy::UpdateTransform()
 {
     LocalToWorld = Component->GetWorldMatrix();
     WorldToLocal = LocalToWorld.Inverse();
+    NormalMatrix = MakeNormalMatrix(LocalToWorld);
     const FBox LocalBounds = Mesh ? Mesh->GetRenderBounds() : Component->CalcLocalBounds();
     Bounds = MakeWorldBounds(LocalBounds.GetWorldAABB(LocalToWorld));
     LODSphere = Mesh ? Mesh->GetLocalLODSphere().Transform(LocalToWorld) : FLODSphere{};

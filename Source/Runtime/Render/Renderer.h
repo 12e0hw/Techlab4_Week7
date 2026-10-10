@@ -13,7 +13,26 @@ constexpr uint32 ObjectSlotBytes = 256;
 struct FPerObjectConstants
 {
 	FMatrix World;
+	FMatrix NormalMatrix;
 };
+static_assert(sizeof(FPerObjectConstants) <= ObjectSlotBytes);
+
+struct FViewConstants
+{
+	FMatrix ViewProjection;
+	FVector CameraPosition;
+	float Padding = 0.0f;
+};
+static_assert(sizeof(FViewConstants) == 80, "HLSL b0 레이아웃(matrix + float3 + float)과 같아야 한다");
+
+inline FMatrix MakeNormalMatrix(const FMatrix& World) { return World.Inverse().GetTransposed(); }
+
+inline void WriteObjectSlot(uint8* SlotBase, uint32 Slot, const FMatrix& World, const FMatrix& NormalMatrix)
+{
+	uint8* Dest = SlotBase + static_cast<size_t>(Slot) * ObjectSlotBytes;
+	std::memcpy(Dest + offsetof(FPerObjectConstants, World), &World, sizeof(FMatrix));
+	std::memcpy(Dest + offsetof(FPerObjectConstants, NormalMatrix), &NormalMatrix, sizeof(FMatrix));
+}
 
 struct FSortEntry
 {
@@ -50,7 +69,7 @@ public:
 	void RenderAll(FRenderQueue& InQueue, UCameraComponent* CameraComponent);
 
 	// Adapter가 계산한 ViewProjection을 직접 받아 View별 렌더 큐를 그린다.
-	void RenderAll(FRenderQueue& InQueue, const FMatrix& ViewProjection);
+	void RenderAll(FRenderQueue& InQueue, const FMatrix& ViewProjection, const FVector& CameraPosition);
 
 	// 큐를 정렬해 불투명 패킷만 그린다. 반투명은 RenderTranslucent 호출 전까지 보관한다.
 	void RenderOpaque(const FMatrix& ViewProjection);
@@ -66,8 +85,8 @@ public:
 	// RenderOpaque가 보관한 반투명 패킷을 먼 것부터 그린다.
 	void RenderTranslucent(const FMatrix& ViewProjection);
 
-	// 큐를 Material, Opaque, Mesh에 따라 정렬한다
-	void RenderQueueSorting(FRenderQueue& InQueue, const FMatrix& ViewProjection);
+	// 큐를 Material, Opaque, Mesh에 따라 정렬하고 View 상수(b0)를 올린다
+	void RenderQueueSorting(FRenderQueue& InQueue, const FMatrix& ViewProjection, const FVector& CameraPosition);
 
 	// [측정 전용] RenderOpaque 직후에 호출한다. 불투명 패킷을 깊이 LESS_EQUAL·색 쓰기 없이 다시 그리며
 	// 패킷마다 오클루전 쿼리를 걸어, 최종 화면에 실제로 픽셀을 남긴 물체 수를 센다.
@@ -104,7 +123,7 @@ private:
 
 	void DrawPackets(uint32 Begin, uint32 End, const FMatrix& ViewProjection);
 	void DrawStaticGroups();
-	void UpdatePerObjectConstants(const FMatrix& World);
+	void UpdatePerObjectConstants(const FMatrix& World, const FMatrix& NormalMatrix);
 
 	// 이번 프레임 스태틱 메시 묶음 (정렬 키 순). 비어 있지 않은 것만 담는다.
 	std::vector<const FStaticDrawGroup*> StaticGroups;

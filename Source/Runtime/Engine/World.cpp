@@ -299,8 +299,7 @@ void UWorld::GatherRenderPackets(FRenderQueue& RenderQueue, const FLODViewContex
 					if (SlotDest)
 					{
 						// 칸 VisibleIndex는 이 반복만 쓴다 → 스레드끼리 겹치지 않음
-						std::memcpy(SlotDest + size_t(VisibleIndex) * ObjectSlotBytes,
-							&Proxy->GetLocalToWorld(), sizeof(FMatrix));
+						WriteObjectSlot(SlotDest, VisibleIndex, Proxy->GetLocalToWorld(), Proxy->GetNormalMatrix());
 						Slot = VisibleIndex;
 					}
 
@@ -381,8 +380,16 @@ void UWorld::GatherRenderPackets(FRenderQueue& RenderQueue, const FLODViewContex
 				{
 					if (!SlotDest || NextExtraSlot >= MaxSlots) break;
 					FRenderPacket& Packet = RenderQueue[p];
-					const FMatrix& Model = Packet.Proxy ? Packet.Proxy->GetLocalToWorld() : Packet.Model ? *Packet.Model : FMatrix::Identity;
-					std::memcpy(SlotDest + size_t(NextExtraSlot) * ObjectSlotBytes, &Model, sizeof(FMatrix));
+					if (Packet.Proxy)
+					{
+						WriteObjectSlot(SlotDest, NextExtraSlot, Packet.Proxy->GetLocalToWorld(), Packet.Proxy->GetNormalMatrix());
+					}
+					else
+					{
+						// 프록시 없는 패킷(빌보드 등)은 캐시가 없으므로 여기서 계산한다.
+						const FMatrix& Model = Packet.Model ? *Packet.Model : FMatrix::Identity;
+						WriteObjectSlot(SlotDest, NextExtraSlot, Model, MakeNormalMatrix(Model));
+					}
 					Packet.Slot = NextExtraSlot++;
 				}
 			}

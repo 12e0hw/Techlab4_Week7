@@ -22,6 +22,8 @@ public:
     const FAABB& GetBounds() const { return Bounds; }
     const FMatrix& GetLocalToWorld() const { return LocalToWorld; }
     const FMatrix& GetWorldToLocal() const { return WorldToLocal; }
+    // 노멀 변환용 World 역전치. Transform이 바뀔 때만 다시 계산한다.
+    const FMatrix& GetNormalMatrix() const { return NormalMatrix; }
     const FLODSphere& GetLODSphere() const { return LODSphere; }
     UStaticMesh* GetMesh() const { return Mesh; }
     bool IsVisible() const { return bVisible; }
@@ -39,6 +41,7 @@ private:
     TSharedPtr<const FMeshRenderState> RenderState;
     FMatrix LocalToWorld;
     FMatrix WorldToLocal;
+    FMatrix NormalMatrix;
     FAABB Bounds;
     FLODSphere LODSphere;
     int32 PackedIndex = INDEX_NONE;

@@ -573,7 +573,7 @@ void UEditorEngine::RenderOpaquePass(const int32 ViewIndex, const FRenderingInfo
 		Renderer->SetViewMode(ViewRenderMode);
 		// 불투명을 먼저 그리고 반투명을 먼 것부터 그린다.
 		// Grid는 깊이를 쓰지 않는 반투명 위에도 겹칠 수 있지만, 언리얼의 에디터 프리미티브처럼 Overlay Pass에서 마지막에 합성한다.
-		Renderer->RenderQueueSorting(RenderQueue, ViewProjection);
+		Renderer->RenderQueueSorting(RenderQueue, ViewProjection, ViewCameraLocation);
 		Renderer->RenderOpaque(ViewProjection);
 		Renderer->RenderTranslucent(ViewProjection);
 		// 장면 Wireframe이 Grid·Gizmo·UI로 전파되지 않도록 복원한다.

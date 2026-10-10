@@ -26,7 +26,6 @@ namespace
 {
 	// VSSetConstantBuffers1의 오프셋은 16개 상수(256바이트) 단위여야 하므로 오브젝트마다 256바이트 칸을 쓴다.
 	constexpr uint32 PerObjectSlotConstants = 16;
-	static_assert(sizeof(FPerObjectConstants) <= ObjectSlotBytes);
 
 	constexpr uint32 MinPerObjectSlots = 1024;
 
@@ -34,6 +33,12 @@ namespace
 	{
 		if (Packet.Proxy) return Packet.Proxy->GetLocalToWorld();
 		return Packet.Model ? *Packet.Model : FMatrix::Identity;
+	}
+
+	FMatrix GetPacketNormalMatrix(const FRenderPacket& Packet)
+	{
+		if (Packet.Proxy) return Packet.Proxy->GetNormalMatrix();
+		return MakeNormalMatrix(GetPacketWorld(Packet));
 	}
 
 	uint64 MakeSortKey(const FRenderPacket& Packet)
@@ -62,7 +67,7 @@ bool FRenderer::Init()
 {
 	bUsePerObjectSlots = RenderCommand::SupportsConstantBufferOffsets();
 	PerObjectCB = RenderCommand::CreateConstantBuffer(sizeof(FPerObjectConstants));
-	ViewCB = RenderCommand::CreateConstantBuffer(sizeof(FMatrix));
+	ViewCB = RenderCommand::CreateConstantBuffer(sizeof(FViewConstants));
 
 	GPUOcclusion.Init();   // 실패해도 오클루전만 못 쓸 뿐 렌더링은 된다
 
@@ -90,7 +95,7 @@ void FRenderer::EnsurePerObjectSlotCapacity(uint32 SlotCount)
 	PerObjectSlotCapacity = NewCapacity;
 }
 
-// 원래 패킷 순서로 World 행렬을 올린다. 정렬 목록은 원래 패킷 번호의 칸을 바인딩한다.
+// 원래 패킷 순서로 World·Normal 행렬을 올린다. 정렬 목록은 원래 패킷 번호의 칸을 바인딩한다.
 void FRenderer::UploadPerObjectConstants()
 {
 	SCOPE_CYCLE_COUNTER(STAT_UploadPerObjectCB);
@@ -117,24 +122,23 @@ void FRenderer::UploadPerObjectConstants()
 	for (uint32 Index = 0; Index < Count; ++Index)
 	{
 		FRenderPacket& P = RenderPackets[Index];
-		const FMatrix& Model = GetPacketWorld(P);
-		std::memcpy(Dest + static_cast<size_t>(Index) * ObjectSlotBytes, &Model, sizeof(FMatrix));
+		WriteObjectSlot(Dest, Index, GetPacketWorld(P), GetPacketNormalMatrix(P));
 		P.Slot = Index;
 	}
 
 	RenderCommand::Unmap(PerObjectSlotCB.get());
 }
 
-// 카메라의 ViewProjection을 공통 렌더 경로로 전달한다.
+// 카메라의 ViewProjection과 위치를 공통 렌더 경로로 전달한다.
 void FRenderer::RenderAll(FRenderQueue& InQueue, UCameraComponent* CameraComponent)
 {
-	RenderAll(InQueue, CameraComponent->GetViewProjectionMatrix());
+	RenderAll(InQueue, CameraComponent->GetViewProjectionMatrix(), CameraComponent->GetWorldLocation());
 }
 
 // 불투명 우선·반투명 거리순으로 정렬해 View 행렬과 Section 범위로 그린다.
-void FRenderer::RenderAll(FRenderQueue& InQueue, const FMatrix& ViewProjection)
+void FRenderer::RenderAll(FRenderQueue& InQueue, const FMatrix& ViewProjection, const FVector& CameraPosition)
 {
-	RenderQueueSorting(InQueue, ViewProjection);
+	RenderQueueSorting(InQueue, ViewProjection, CameraPosition);
 	RenderOpaque(ViewProjection);
 	RenderTranslucent(ViewProjection);
 }
@@ -161,7 +165,8 @@ void FRenderer::DrawStaticGroups()
 		return;
 
 	SCOPE_CYCLE_COUNTER(STAT_DrawRenderPackets);
-	RenderCommand::BindConstantBuffer(0, ViewCB.get(), EShaderBindFlagBits::Vertex);
+	// 픽셀 단위 조명이 카메라 위치를 읽으므로 PS에도 바인딩한다.
+	RenderCommand::BindConstantBuffer(0, ViewCB.get(), EShaderBindFlagBits::Vertex | EShaderBindFlagBits::Pixel);
 
 	UMaterial* BoundMaterial = nullptr;
 	for (const FStaticDrawGroup* Group : StaticGroups)
@@ -185,7 +190,7 @@ void FRenderer::DrawStaticGroups()
 			else
 			{
 				RenderCommand::BindConstantBuffer(2, PerObjectCB.get(), EShaderBindFlagBits::Vertex);
-				UpdatePerObjectConstants(Item.Proxy->GetLocalToWorld());
+				UpdatePerObjectConstants(Item.Proxy->GetLocalToWorld(), Item.Proxy->GetNormalMatrix());
 			}
 			RenderCommand::DrawIndexed(Item.IndexCount, Item.StartIndex);
 		}
@@ -196,9 +201,12 @@ void FRenderer::DrawStaticGroups()
 	LastMaterial = nullptr;
 }
 
-void FRenderer::RenderQueueSorting(FRenderQueue& InQueue, const FMatrix& ViewProjection)
+void FRenderer::RenderQueueSorting(FRenderQueue& InQueue, const FMatrix& ViewProjection, const FVector& CameraPosition)
 {
-	RenderCommand::UpdateBufferData(ViewCB.get(), &ViewProjection);
+	FViewConstants ViewConstants;
+	ViewConstants.ViewProjection = ViewProjection;
+	ViewConstants.CameraPosition = CameraPosition;
+	RenderCommand::UpdateBufferData(ViewCB.get(), &ViewConstants);
 	{
 		SCOPE_CYCLE_COUNTER(STAT_RenderQueueSorting);
 
@@ -244,7 +252,7 @@ void FRenderer::DrawPackets(uint32 Begin, uint32 End, const FMatrix& ViewProject
 	LastMaterial = nullptr;
 	uint8 LastLODIndex = 0;
 
-	RenderCommand::BindConstantBuffer(0, ViewCB.get(), EShaderBindFlagBits::Vertex);
+	RenderCommand::BindConstantBuffer(0, ViewCB.get(), EShaderBindFlagBits::Vertex | EShaderBindFlagBits::Pixel);
 
 
 	for (uint32 k = Begin; k < End; ++k)          // k = 정렬된 위치
@@ -343,7 +351,7 @@ FOcclusionMeasureResult FRenderer::MeasureOpaqueOcclusion(const FMatrix& ViewPro
 		OcclusionQueries.Add(std::move(Query));
 	}
 
-	RenderCommand::BindConstantBuffer(0, ViewCB.get(), EShaderBindFlagBits::Vertex);
+	RenderCommand::BindConstantBuffer(0, ViewCB.get(), EShaderBindFlagBits::Vertex | EShaderBindFlagBits::Pixel);
 	if (!bUsePerObjectSlots)
 		RenderCommand::BindConstantBuffer(2, PerObjectCB.get(), EShaderBindFlagBits::Vertex);
 
@@ -374,7 +382,7 @@ FOcclusionMeasureResult FRenderer::MeasureOpaqueOcclusion(const FMatrix& ViewPro
 		else
 		{
 			RenderCommand::BindConstantBuffer(2, PerObjectCB.get(), EShaderBindFlagBits::Vertex);
-			UpdatePerObjectConstants(*Draw.World);
+			UpdatePerObjectConstants(*Draw.World, MakeNormalMatrix(*Draw.World));   // 측정 전용 폴백이라 매번 계산한다
 		}
 
 		ID3D11Query* Query = OcclusionQueries[Index].Get();
@@ -525,14 +533,15 @@ void FRenderer::UpdatePerObjectConstants(const FRenderPacket& RenderPacket, cons
 	// rp.Transform 과 Camera VP 행렬 곱
 	// 행렬곱의 결과 (MVP Matrix) Constant Buffer 업데이트 필요
 
-	UpdatePerObjectConstants(GetPacketWorld(RenderPacket));
+	UpdatePerObjectConstants(GetPacketWorld(RenderPacket), GetPacketNormalMatrix(RenderPacket));
 }
 
-void FRenderer::UpdatePerObjectConstants(const FMatrix& World)
+void FRenderer::UpdatePerObjectConstants(const FMatrix& World, const FMatrix& NormalMatrix)
 {
 	FPerObjectConstants Constants;
 
 	Constants.World = World;
+	Constants.NormalMatrix = NormalMatrix;
 
 	RenderCommand::UpdateBufferData(PerObjectCB.get(), &Constants);
 }

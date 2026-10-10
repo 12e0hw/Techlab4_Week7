@@ -11,9 +11,12 @@
 #define SHADING_MODEL 1     // 0 Gouraud, 1 Phong
 #endif
 
+// FViewConstants
 cbuffer Viewconstants : register(b0)
 {
     matrix VP;
+    float3 CameraPosition;
+    float ViewPadding;
 };
 
 cbuffer MaterialParams : register(b1)
@@ -24,9 +27,11 @@ cbuffer MaterialParams : register(b1)
     float Padding;
 };
 
+// FPerObjectConstants
 cbuffer Worldconstants : register(b2)
 {
     matrix World;
+    matrix NormalMatrix; // World의 역전치
 };
 
 struct VS_INPUT
@@ -55,9 +60,7 @@ PS_INPUT mainVS(VS_INPUT input)
 
     output.worldPos = mul(float4(input.p, 1.0f), World).xyz;
     output.position = mul(mul(float4(input.p, 1.0f), World), VP);
-    
-    // w=0으로 이동 성분을 빼고 월드 공간으로 보낸다. 비균등 스케일이면 역전치가 필요하다.
-    output.normal = mul(float4(input.n, 0.0f), World).xyz;
+    output.normal = mul(float4(input.n, 0.0f), NormalMatrix).xyz;
     output.color = input.c;
     output.uv = input.t;
     return output;
@@ -65,16 +68,16 @@ PS_INPUT mainVS(VS_INPUT input)
 
 float4 mainPS(PS_INPUT input) : SV_TARGET
 {
-    // Mesh 표면색
     float4 texColor = g_txColor.Sample(g_Sample, input.uv + UVOffset);
     float4 albedo = texColor * BaseColor;
-
-    // Opaque는 알파를 1로 고정한다. 뷰포트 RT를 ImGui가 알파 블렌딩으로 그리므로 알파가 남으면 비쳐 보인다
+    
     float alpha = bOpaque > 0.5f ? 1.0f : albedo.a;
     
 #if UNLIT
     return float4(albedo.rgb, alpha);
 #else
-    return float4(albedo.rgb, alpha);
+    float3 N = normalize(input.normal);
+    float3 V = normalize(CameraPosition - input.worldPos);
+    return float4(saturate(dot(N, V)).xxx, alpha);
 #endif
 }
