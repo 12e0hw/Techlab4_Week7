@@ -1,12 +1,12 @@
 #pragma once
 
-#include "SceneComponent.h"
+#include "LightComponent.h"
 
 class FLineBatcher;
 
-class USpotLightComponent : public USceneComponent
+class USpotLightComponent : public ULightComponent
 {
-	DECLARE_CLASS(USpotLightComponent, USceneComponent)
+	DECLARE_CLASS(USpotLightComponent, ULightComponent)
 
 	REFLECT_START(ClassName)
 		PROPERTY(InnerConeAngle)
