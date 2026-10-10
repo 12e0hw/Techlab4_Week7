@@ -12,7 +12,7 @@ class UExponentialHeightFogComponent final : public USceneComponent
 		PROPERTY(StartDistance)
 		PROPERTY(FogCutoffDistance)
 		PROPERTY(FogMaxOpacity)
-		PROPERTY_TYPE(FogColor, Color)
+		PROPERTY(FogColor)
 	REFLECT_END()
 
 public:
@@ -33,7 +33,7 @@ private:
 	float    StartDistance = 10.0;
 	float    FogCutoffDistance = 0.0f;
 	float    FogMaxOpacity = 1.0f;
-	FVector4 FogColor = { 1.0f, 0.4f, 0.7f, 1.0f };
+	FColor   FogColor = FColor(255, 102, 179);
 
 
 };

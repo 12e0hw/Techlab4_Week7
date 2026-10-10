@@ -93,10 +93,14 @@ void USpotLightComponent::DrawDebug(FLineBatcher* LineBatcher) const
 	const float SafeInnerAngle = FMath::Clamp(InnerConeAngle, 0.0f, SafeOuterAngle);
 	const float SafeRadius = (AttenuationRadius > 0.0f) ? AttenuationRadius : 0.0f;
 
-	// 바깥 원뿔은 라이트 색 그대로, 안쪽은 구분되도록 흐리게
-	AddWireCone(LineBatcher, Apex, Forward, Right, Up, SafeOuterAngle, SafeRadius, LightColor);
+	// 디버그 라인은 오버레이라 화면에 보이는 sRGB 값을 감마 변환 없이 그대로 쓴다
+	const FLinearColor LineColor = LightColor.ReinterpretAsLinear();
 
-	FVector4 InnerColor(LightColor.X * 0.5f, LightColor.Y * 0.5f, LightColor.Z * 0.5f, LightColor.W);
+	// 바깥 원뿔은 라이트 색 그대로, 안쪽은 구분되도록 흐리게
+	FVector4 OuterColor(LineColor.R, LineColor.G, LineColor.B, LineColor.A);
+	AddWireCone(LineBatcher, Apex, Forward, Right, Up, SafeOuterAngle, SafeRadius, OuterColor);
+
+	FVector4 InnerColor(LineColor.R * 0.5f, LineColor.G * 0.5f, LineColor.B * 0.5f, LineColor.A);
 
 	AddWireCone(LineBatcher, Apex, Forward, Right, Up, SafeInnerAngle, SafeRadius, InnerColor);
 }

@@ -39,6 +39,27 @@ inline void from_json(const json& J, FVector4& V)
 	}
 }
 
+// 메모리 순서(BGRA)가 아니라 읽기 쉬운 RGBA 순서로 저장한다
+inline void to_json(json& J, const FColor& C)
+{
+	J = json::array({ C.R, C.G, C.B, C.A });
+}
+
+inline void from_json(const json& J, FColor& C)
+{
+	C = FColor(J[0].get<uint8>(), J[1].get<uint8>(), J[2].get<uint8>(), J[3].get<uint8>());
+}
+
+inline void to_json(json& J, const FLinearColor& C)
+{
+	J = json::array({ C.R, C.G, C.B, C.A });
+}
+
+inline void from_json(const json& J, FLinearColor& C)
+{
+	C = FLinearColor(J[0].get<float>(), J[1].get<float>(), J[2].get<float>(), J[3].get<float>());
+}
+
 inline void to_json(json& J, const FTransform& T)
 {
 	J = json{ {"Location", T.Location}, {"Rotation", T.Rotation}, {"Scale", T.Scale} };

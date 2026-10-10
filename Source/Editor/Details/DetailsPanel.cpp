@@ -587,11 +587,24 @@ namespace
 			break;
 		}
 
-		case EPropertyType::Color:
+		case EPropertyType::ByteColor:
 		{
-			// 타입은 Vector4와 같고 위젯만 색상 선택기다
-			FVector4* Value = static_cast<FVector4*>(ValuePtr);
-			bChanged = ImGui::ColorEdit4(Label.c_str(), &Value->X);
+			// FColor는 메모리가 BGRA라 ImGui(RGBA float)에 직접 넘기지 않고 옮겨 담아 편집한다
+			FColor* Value = static_cast<FColor*>(ValuePtr);
+			float Rgba[4] = { Value->R / 255.0f, Value->G / 255.0f, Value->B / 255.0f, Value->A / 255.0f };
+			if (ImGui::ColorEdit4(Label.c_str(), Rgba))
+			{
+				auto ToByte = [](float V) { return static_cast<uint8>(FMath::Clamp(V, 0.0f, 1.0f) * 255.0f + 0.5f); };
+				*Value = FColor(ToByte(Rgba[0]), ToByte(Rgba[1]), ToByte(Rgba[2]), ToByte(Rgba[3]));
+				bChanged = true;
+			}
+			break;
+		}
+		case EPropertyType::LinearColor:
+		{
+			// 1을 넘는 HDR 값도 편집할 수 있게 한다
+			FLinearColor* Value = static_cast<FLinearColor*>(ValuePtr);
+			bChanged = ImGui::ColorEdit4(Label.c_str(), &Value->R, ImGuiColorEditFlags_Float | ImGuiColorEditFlags_HDR);
 			break;
 		}
 		case EPropertyType::String:

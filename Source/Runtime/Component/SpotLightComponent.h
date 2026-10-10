@@ -14,7 +14,7 @@ class USpotLightComponent : public USceneComponent
 		PROPERTY(AttenuationRadius)
 		PROPERTY(Falloff)
 		PROPERTY(Intensity)
-		PROPERTY_TYPE(LightColor, Color)
+		PROPERTY(LightColor)
 	REFLECT_END()
 
 public:
@@ -35,8 +35,8 @@ public:
 	float GetAttenuationRadius() const { return AttenuationRadius; }
 	void SetAttenuationRadius(float InRadius) { AttenuationRadius = InRadius; }
 
-	const FVector4& GetLightColor() const { return LightColor; }
-	void SetLightColor(const FVector4& InColor) { LightColor = InColor; }
+	const FColor& GetLightColor() const { return LightColor; }
+	void SetLightColor(const FColor& InColor) { LightColor = InColor; }
 
 private:
 	// 원뿔 중심축 기준 반각(도). 
@@ -51,5 +51,5 @@ private:
 
 	float Intensity = 1.0f;
 
-	FVector4 LightColor = FVector4(1.0f, 1.0f, 0.6f, 1.0f);
+	FColor LightColor = FColor(255, 255, 153);
 };

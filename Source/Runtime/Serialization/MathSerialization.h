@@ -5,6 +5,7 @@
 #include "Math/Vector4.h"
 #include "Math/Rotator.h"
 #include "Math/Transform.h"
+#include "Math/Color.h"
 #include "Serialization/StructuredArchiveSlots.h"
 
 // UE Vector.h와 동일: Record {X, Y, Z}
@@ -29,6 +30,18 @@ inline void operator<<(FStructuredArchiveSlot Slot, FVector4& V)
 {
 	FStructuredArchiveRecord Record = Slot.EnterRecord();
 	Record << SA_VALUE("X", V.X) << SA_VALUE("Y", V.Y) << SA_VALUE("Z", V.Z) << SA_VALUE("W", V.W);
+}
+
+inline void operator<<(FStructuredArchiveSlot Slot, FColor& C)
+{
+	FStructuredArchiveRecord Record = Slot.EnterRecord();
+	Record << SA_VALUE("R", C.R) << SA_VALUE("G", C.G) << SA_VALUE("B", C.B) << SA_VALUE("A", C.A);
+}
+
+inline void operator<<(FStructuredArchiveSlot Slot, FLinearColor& C)
+{
+	FStructuredArchiveRecord Record = Slot.EnterRecord();
+	Record << SA_VALUE("R", C.R) << SA_VALUE("G", C.G) << SA_VALUE("B", C.B) << SA_VALUE("A", C.A);
 }
 
 inline void operator<<(FStructuredArchiveSlot Slot, FRotator& R)

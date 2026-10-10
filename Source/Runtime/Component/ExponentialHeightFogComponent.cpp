@@ -11,7 +11,9 @@ FFogInfo UExponentialHeightFogComponent::GetFogInfo() const
 	FogInfo.StartDistance = StartDistance;
 	FogInfo.FogCutoffDistance = FogCutoffDistance;
 	FogInfo.FogMaxOpacity = FogMaxOpacity;
-	FogInfo.FogColor = FogColor;
+	// 에디터에서 고른 sRGB 색을 셰이더 계산용 Linear로 디코딩한다
+	const FLinearColor LinearFogColor(FogColor);
+	FogInfo.FogColor = FVector4(LinearFogColor.R, LinearFogColor.G, LinearFogColor.B, LinearFogColor.A);
 	FogInfo.fogHeight = GetOwner()->GetActorLocation().Z;
 
 	return FogInfo;

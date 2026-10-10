@@ -232,7 +232,8 @@ void FScene::UpdateFireBallLight(FRenderer* Renderer)
 			continue;
 
 		const FVector Position = FireBall->GetWorldLocation();
-		const FVector4 Color = FireBall->GetLightColor();
+		// 에디터에서 고른 sRGB 색을 셰이더 계산용 Linear로 디코딩한다
+		const FLinearColor Color(FireBall->GetLightColor());
 
 		Data.PositionRadius = FVector4(
 			Position.X,
@@ -242,9 +243,9 @@ void FScene::UpdateFireBallLight(FRenderer* Renderer)
 		);
 
 		Data.ColorIntensity = FVector4(
-			Color.X,
-			Color.Y,
-			Color.Z,
+			Color.R,
+			Color.G,
+			Color.B,
 			std::max<float>(FireBall->GetIntensity(), 0.0f)
 		);
 
