@@ -5,6 +5,7 @@
 #include "Core/Window.h"
 #include "Core/EngineLog.h"
 #include "Core/SplashScreen.h"
+#include "Core/ResourcePaths.h"
 #include "Core/Stats/LightweightStats.h"
 #include "Editor/EditorUI/ImGuiRenderer.h"
 #include "Launch/LaunchEngineLoop.h"
@@ -41,7 +42,7 @@ FEngineConfig UBenchmarkEngine::GetConfig() const
 {
 	FEngineConfig Desc = Super::GetConfig();
 	Desc.Title = L"Benchmarker";
-	Desc.SplashImage = "Resources/Splash.png";
+	Desc.SplashImage = ResourcePaths::SplashImage;
 	return Desc;
 }
 
@@ -61,7 +62,7 @@ bool UBenchmarkEngine::Init()
 	// 이 사과 OBJ들은 Z-up으로 만들어져 있어, 임포터의 OBJ 표준(Y-up) → 엔진(Z-up) 변환을 거치면 꼭지가 -X로 눕는다.
 	// Y축 기준 회전으로 -X → +Z가 되게 세운다 (LOD·피킹 BVH가 새 방향으로 만들어지도록 LOD 생성 전에 한다).
 	const auto StandUp = [](const FVector& V) { return FVector(V.Z, V.Y, -V.X); };
-	for (const char* ApplePath : { "Assets/Data/apple_mid.obj", "Assets/Data/bitten_apple_mid.obj" })
+	for (const char* ApplePath : { "Assets/Models/Apple/apple_mid.obj", "Assets/Models/Apple/bitten_apple_mid.obj" })
 	{
 		if (UStaticMesh* Apple = UAssetManager::LoadObjStaticMesh(ApplePath))
 			UAssetManager::ReorientStaticMesh(*Apple, StandUp);

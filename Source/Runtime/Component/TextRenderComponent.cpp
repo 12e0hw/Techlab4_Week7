@@ -2,13 +2,14 @@
 #include "TextRenderComponent.h"
 
 #include "Asset/AssetManager.h"
+#include "Core/ResourcePaths.h"
 #include "Engine/World.h"
 
 #include "Text/TextRenderer.h"
 
 UTextRenderComponent::UTextRenderComponent()
 {
-	Font = UAssetManager::GetAssetByPath<UFont>("Fonts/CookieRun.json");
+	Font = UAssetManager::GetAssetByPath<UFont>(ResourcePaths::DefaultFont);
 }
 
 UTextRenderComponent::~UTextRenderComponent()

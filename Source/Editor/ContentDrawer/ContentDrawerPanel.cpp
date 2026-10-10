@@ -3,9 +3,12 @@
 #include "Asset/AssetManager.h"
 #include "Text/Font.h"
 #include "Editor/HitoriEd/EditorDragDrop.h"
+#include "Editor/HitoriEd/EditorResourcePaths.h"
 
 bool FContentDrawerPanel::Init()
 {
+	FolderIcon = UAssetManager::Get().LoadTexture(EditorResourcePaths::FolderIcon);
+	FileIcon = UAssetManager::Get().LoadTexture(EditorResourcePaths::FileIcon);
 	return false;
 }
 
@@ -94,7 +97,7 @@ void FContentDrawerPanel::OnRender()
 				// 폴더 또는 파일 아이콘 표시
 				if (bIsDirectory)
 				{
-					Thumbnail = UAssetManager::GetAssetByPath<UTexture2D>(FolderIconPath);
+					Thumbnail = FolderIcon;
 				}
 				else // 파일인 경우
 				{
@@ -114,7 +117,7 @@ void FContentDrawerPanel::OnRender()
 
 					if (Thumbnail == nullptr)
 					{
-						Thumbnail = UAssetManager::GetAssetByPath<UTexture2D>(FileIconPath);
+						Thumbnail = FileIcon;
 					}
 				}
 				if (Thumbnail)

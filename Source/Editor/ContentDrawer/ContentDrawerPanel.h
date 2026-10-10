@@ -6,6 +6,8 @@
 
 namespace fs = std::filesystem;
 
+class UTexture2D;
+
 class FContentDrawerPanel : public IEditorPanel
 {
 public:
@@ -19,7 +21,7 @@ private:
 	fs::path AssetRootPath = "Assets";
 	fs::path CurrentPath = "Assets";
 
-	const FString FolderIconPath = "Assets/Icons/Folder.png";
-	const FString FileIconPath = "Assets/Icons/File.png";
-	
+	UTexture2D* FolderIcon = nullptr;
+	UTexture2D* FileIcon = nullptr;
+
 };

@@ -15,6 +15,7 @@
 #include "UObject/UObjectGlobals.h"
 
 #include "Render/ImageLoader.h"
+#include "Core/ResourcePaths.h"
 
 
 namespace
@@ -114,6 +115,7 @@ void UAssetManager::Init(const FAssetLoadProgress& OnProgress)
 	// 머티리얼이 참조하므로 반드시 먼저 만든다
 	Get().CreateDefaultTextures();
 	Get().CreateDefaultMaterial();
+	Get().LoadFontAtlas(ResourcePaths::DefaultFont, ResourcePaths::DefaultFontAtlas);
 	Get().ScanAssets("Assets", OnProgress);
 	Get().CreateDefaultMeshes();
 	Get().CreateParticleMaterial();
@@ -123,7 +125,8 @@ void UAssetManager::ScanAssets(const fs::path& AssetRoot, const FAssetLoadProgre
 {
 	if (!fs::exists(AssetRoot))
 	{
-		HTR_LOG(Error, "Asset root not found: {}", AssetRoot.generic_string());
+		// Assets는 사용자 콘텐츠라 없어도 엔진은 Resources만으로 뜬다
+		HTR_LOG(Warning, "Asset root not found: {}", AssetRoot.generic_string());
 		return;
 	}
 
@@ -291,7 +294,7 @@ void UAssetManager::CreateParticleMaterial()
 {
 	UMaterial* ParticleMat = NewObject<UMaterial>();
 	ParticleMat->Shader = FRenderResourceManager::GetShaderProgram("Resources/Shader/ParticleSubUVShader.hlsl");
-	ParticleMat->Textures.Add(GetAssetByPath<UTexture2D>("Assets/SubUV/StarParticle.png"));
+	ParticleMat->Textures.Add(LoadTexture(ResourcePaths::DefaultParticleTexture));
 	ParticleMat->BlendState = EBlendState::AlphaBlend;
 	ParticleMat->DepthStencilState = EDepthStencilState::ReadOnly;
 	ParticleMat->ParamLayout = EMaterialParamLayout::ParticleSubUV;
@@ -345,6 +348,11 @@ UTexture2D* UAssetManager::LoadTexture(const FString& InPath, bool bGenerateMips
 
 UFont* UAssetManager::LoadFontAtlas(const FString& JsonPath, const FString& AtlasTexturePath)
 {
+	if (URenderAsset** Found = AssetMap.Find(JsonPath))
+	{
+		return Cast<UFont>(*Found);
+	}
+
 	UFont* Font = NewObject<UFont>();
 
 	if (!Font->LoadFontAtlasJson(JsonPath))

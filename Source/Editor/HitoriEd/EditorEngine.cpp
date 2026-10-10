@@ -26,7 +26,9 @@
 #include "Render/RenderCommand.h"
 #include "Editor/Outliner/OutlinerPanel.h"
 #include "Editor/HitoriEd/EditorFileUtils.h"
+#include "Editor/HitoriEd/EditorResourcePaths.h"
 #include "UObject/UObjectIterator.h"
+#include "Core/ResourcePaths.h"
 
 #include "Core/EngineLog.h"
 #include "Core/Stats/LightweightStats.h"
@@ -55,7 +57,7 @@ FEngineConfig UEditorEngine::GetConfig() const
 	Desc.bCreateDepthBuffer = false;
 	Desc.bExitOnEscape = false;
 	// 파일이 없으면 검은 배경에 상태 텍스트만 표시된다.
-	Desc.SplashImage = "Resources/Splash.png";
+	Desc.SplashImage = ResourcePaths::SplashImage;
 	return Desc;
 }
 
@@ -131,7 +133,7 @@ bool UEditorEngine::Init()
 
 	Outline = MakeUnique<FOutline>();
 
-	SystemFont = UAssetManager::GetAssetByPath<UFont>("Assets/Fonts/Pretendard.json");
+	SystemFont = UAssetManager::GetAssetByPath<UFont>(ResourcePaths::DefaultFont);
 
 	TextRenderer = MakeUnique<FTextRenderer>();
 	TextRenderer->Init();
@@ -222,36 +224,36 @@ bool UEditorEngine::Init()
 	ViewportsPanel->SetViewportAdapter(&MultipleViewportsAdapter);
 
 	SkyboxRenderer = MakeUnique<FSkyboxRenderer>();
-	SkyboxRenderer->Init("Assets/SkySphere/Sky.jpg");
+	SkyboxRenderer->Init(ResourcePaths::DefaultSkyPanorama);
 
 	const ImVec4 White = { 1, 1, 1, 1 };
 	const ImVec4 Green = { 0.40f, 0.80f, 0.30f, 1.0f };
 
-	Save = { "Save",   "Save Current Scene",UAssetManager::GetAssetByPath<UTexture2D>("Assets/Icons/Toolbar/Save.png"),  White, { EKeyCode::S, true } };
+	Save = { "Save",   "Save Current Scene",UAssetManager::Get().LoadTexture(EditorResourcePaths::ToolbarSaveIcon),  White, { EKeyCode::S, true } };
 
-	Play = { "Play",   "Play World",        UAssetManager::GetAssetByPath<UTexture2D>("Assets/Icons/Toolbar/Play.png"),  Green, { EKeyCode::P, false, true } };
+	Play = { "Play",   "Play World",        UAssetManager::Get().LoadTexture(EditorResourcePaths::ToolbarPlayIcon),  Green, { EKeyCode::P, false, true } };
 
 	Play.CanExecute = [this]()->bool {return !PlayWorld; };
 	Play.Execute = [this]() { RequestPlaySession(); };
 
-	Pause = { "Pause",  "Pause",			UAssetManager::GetAssetByPath<UTexture2D>("Assets/Icons/Toolbar/Pause.png"), White, { EKeyCode::Pause } };
+	Pause = { "Pause",  "Pause",			UAssetManager::Get().LoadTexture(EditorResourcePaths::ToolbarPauseIcon), White, { EKeyCode::Pause } };
 
 	Pause.CanExecute = [this]()->bool {return !bIsPaused && PlayWorld; };
 	Pause.Execute = [this]() { bIsPaused = true; };
 
 
-	Resume = { "Resume", "Resume",          UAssetManager::GetAssetByPath<UTexture2D>("Assets/Icons/Toolbar/Play.png"),  White, { EKeyCode::Pause } };
+	Resume = { "Resume", "Resume",          UAssetManager::Get().LoadTexture(EditorResourcePaths::ToolbarPlayIcon),  White, { EKeyCode::Pause } };
 
 	Resume.CanExecute = [this]()->bool {return bIsPaused && PlayWorld; };
 	Resume.Execute = [this]() { bIsPaused = false; };
 
-	StepFrame = { "Step", "Step One Frame", UAssetManager::GetAssetByPath<UTexture2D>("Assets/Icons/Toolbar/Step.png"),  White, {} };
+	StepFrame = { "Step", "Step One Frame", UAssetManager::Get().LoadTexture(EditorResourcePaths::ToolbarStepIcon),  White, {} };
 
 	StepFrame.CanExecute = [this]()->bool {return bIsPaused && PlayWorld; };
 	StepFrame.Execute = [this]() { bStepRequested= true; };
 
 
-	Stop = { "Stop",   "Stop",				UAssetManager::GetAssetByPath<UTexture2D>("Assets/Icons/Toolbar/Stop.png"),  White, { EKeyCode::Escape } };
+	Stop = { "Stop",   "Stop",				UAssetManager::Get().LoadTexture(EditorResourcePaths::ToolbarStopIcon),  White, { EKeyCode::Escape } };
 
 	Stop.CanExecute = [this]()->bool {return PlayWorld; };
 	Stop.Execute = [this]() { RequestEndPlayMap(); };

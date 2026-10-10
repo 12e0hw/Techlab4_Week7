@@ -3,6 +3,7 @@
 
 #include "imgui_internal.h"
 #include "Editor/HitoriEd/EditorDragDrop.h"
+#include "Editor/HitoriEd/EditorResourcePaths.h"
 #include "Component/PrimitiveComponent.h"
 #include "Component/StaticMeshComponent.h"
 #include "Component/TextRenderComponent.h"
@@ -789,7 +790,7 @@ bool FDetailsPanel::Init()
 
 	io.Fonts->AddFontDefault();
 
-	const char* fontPath = "HMKMRHD.ttf";
+	const char* fontPath = EditorResourcePaths::UIFont;
 	float fontSize = 15.0f;
 	const ImWchar* koreanRanges = io.Fonts->GetGlyphRangesKorean();
 
