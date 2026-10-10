@@ -4,23 +4,6 @@
 #define STB_IMAGE_IMPLEMENTATION   // 이미 다른 곳에 있으면 여기선 빼세요
 #include "stb_image.h"
 
-//int Width, Height, Channels;
-//float* Pixels = stbi_loadf(Path.c_str(), &Width, &Height, &Channels, 4);
-//if (!Pixels) { HTR_LOG(Error, "[HDR] load failed: {}", Path); return nullptr; }
-//
-//D3D11_TEXTURE2D_DESC Desc{};
-//Desc.Width = Width;
-//Desc.Height = Height;
-//Desc.MipLevels = 1;  
-//Desc.ArraySize = 1;
-//Desc.Format = DXGI_FORMAT_R32G32B32A32_FLOAT;
-//Desc.SampleDesc.Count = 1;
-//Desc.Usage = D3D11_USAGE_DEFAULT;
-//Desc.BindFlags = D3D11_BIND_SHADER_RESOURCE;
-//
-//PanoramaTexture = RenderCommand::CreateTexture2D(Desc, Pixels);
-//stbi_image_free(Pixels);
-
 FImageData ImageLoader::Load(const FString& Path)
 {
 	FImageData Result;

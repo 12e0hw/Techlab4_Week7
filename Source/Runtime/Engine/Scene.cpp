@@ -114,19 +114,6 @@ void FScene::UpdateFogInfo(uint32 Id, const FFogInfo& FogInfo)
 	}
 }
 
-//void FScene::RemoveFogInfo(uint32 Id)
-//{
-//	for (int32 i = 0; i < FogInfos.Num(); ++i)
-//	{
-//		if (FogInfos[i].Id == Id)
-//		{
-//			FogInfos.RemoveAtSwap(i);
-//			return;
-//		}
-//	}
-//}
-
-
 void FScene::UpdateAllTransforms()
 {
 	for (FPrimitiveSceneProxy* Proxy : RenderStateDirtyProxies)

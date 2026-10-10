@@ -511,25 +511,7 @@ bool UWorld::DestroyActor(AActor* Actor)
 
 	BeginPlayList = std::move(NewBeginPlayList);
 
-	//// 3. PrimitiveComponents에서 제거
-	//for (UActorComponent* Component : Actor->Components)
-	//{
-	//	UPrimitiveComponent* Primitive = Cast<UPrimitiveComponent>(Component);
-
-	//	if (!Primitive)
-	//		continue;
-
-	//	for (int32 i = PrimitiveComponents.Num() - 1; i >= 0; --i)
-	//	{
-	//		if (PrimitiveComponents[i] == Primitive)
-	//		{
-	//			PrimitiveComponents.RemoveAt(i, 1);
-	//			break;
-	//		}
-	//	}
-	//}
-
-	// 4. Level의 Actors에서 제거
+	// 2. Level의 Actors에서 제거
 	for (int32 i = Level->Actors.Num() - 1; i >= 0; --i)
 	{
 		if (Level->Actors[i] == Actor)
@@ -542,7 +524,7 @@ bool UWorld::DestroyActor(AActor* Actor)
 	FString ActorName = Actor->GetName();
 	uint32 ActorUUID = Actor->GetUUID();
 
-	// 5. 프록시 제거
+	// 3. 프록시 제거
 	for (UActorComponent* Component : Actor->GetComponents())
 	{
 		if (UPrimitiveComponent* Primitive = Cast<UPrimitiveComponent>(Component))
@@ -557,7 +539,7 @@ bool UWorld::DestroyActor(AActor* Actor)
 
 	Actor->RegisterAllActorTickFunctions(false);
 
-	// 6. Actor 삭제
+	// 4. Actor 삭제
 	delete Actor;
 
 	HTR_LOG(Info, "Destroy Actor : {} UUID {}", ActorName, ActorUUID);

@@ -171,43 +171,6 @@ TUniquePtr<FPixelShader> FRenderDevice::CreatePixelShader(const FShaderByteCode&
 	return PS;
 }
 
-//TUniquePtr<FShaderProgram> FRenderDevice::CreateShader(const wchar_t* FileName, D3D11_INPUT_ELEMENT_DESC* InLayoutDesc, size_t InLayoutSize)
-//{
-	//TUniquePtr<FShaderProgram> Shader = MakeUnique<FShaderProgram>();
-
-	//ID3DBlob* VertexShaderCSO;
-	//ID3DBlob* ErrorBlob;
-	//HRESULT hr = D3DCompileFromFile(FileName, nullptr, nullptr, "mainVS", "vs_5_0", 0, 0, &VertexShaderCSO, &ErrorBlob);
-
-	//if (FAILED(hr))
-	//{
-	//	if (ErrorBlob)
-	//	{
-	//		OutputDebugStringA((char*)ErrorBlob->GetBufferPointer());
-	//		ErrorBlob->Release();
-	//	}
-	//	assert(false && "Vertex shader compile failed");
-	//	return nullptr; 
-	//}
-
-	//hr = Device->CreateVertexShader(VertexShaderCSO->GetBufferPointer(), VertexShaderCSO->GetBufferSize(), nullptr, Shader->VertexShader.GetAddressOf());
-
-	//ID3DBlob* PixelShaderCSO;
-	//D3DCompileFromFile(FileName, nullptr, nullptr, "mainPS", "ps_5_0", 0, 0, &PixelShaderCSO, nullptr);
-	//Device->CreatePixelShader(PixelShaderCSO->GetBufferPointer(), PixelShaderCSO->GetBufferSize(), nullptr, Shader->PixelShader.GetAddressOf());
-
-	//if (InLayoutSize > 0)
-	//{
-	//	hr = Device->CreateInputLayout(InLayoutDesc, InLayoutSize,
-	//		VertexShaderCSO->GetBufferPointer(), VertexShaderCSO->GetBufferSize(), &(Shader->InputLayout));
-	//}
-
-	//VertexShaderCSO->Release();
-	//PixelShaderCSO->Release();
-
-	//return Shader;
-//}
-
 void FRenderDevice::Shutdown()
 {
 	DeviceContext->ClearState();
