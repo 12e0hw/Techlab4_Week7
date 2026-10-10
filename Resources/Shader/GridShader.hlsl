@@ -3,10 +3,9 @@ cbuffer GridCB : register(b0)
 {
     float4x4 ViewProj;
     float3 CameraPos;
-    int CellSize;
+    float CellSize;
     float SubCellSize;
-    int GridPlaneType;
-    float2 Padding;
+    float3 Padding;
 };
 
 static const float GridSize = 400.0f; 

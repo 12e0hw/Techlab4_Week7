@@ -133,6 +133,7 @@ bool FGridRenderer::Init(FRenderer* InRenderer)
         {"COLOR", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, offsetof(FGridLineVertex, Color), D3D11_INPUT_PER_VERTEX_DATA, 0}
     };
     static_assert(sizeof(FBatchGridData) == 96, "Grid line constant buffer layout mismatch");
+    static_assert(sizeof(FPSGridData) == 96, "PS grid constant buffer layout mismatch");
     BatchGridShader = FRenderResourceManager::GetShaderProgram("Resources/Shader/GridShaderBatch.hlsl");
     MaxVertices = 100000;
     BatchGridVertices = new FGridLineVertex[MaxVertices];
@@ -310,9 +311,9 @@ void FGridRenderer::OnRenderPSGrid(const FMatrix& ViewProj, const FVector& Camer
     const FVector FadeOrigin(CameraPos.X, CameraPos.Y, 0);
     const float FadeRadius = std::clamp(std::fabs(CameraPos.Z) * 25.0f, 5.0f, 50.0f);
     FPSGridData Data{};
-    Data.invViewProj = ViewProj;
+    Data.ViewProj = ViewProj;
     Data.CameraPos = CameraPos;
-    Data.CellSize = std::max(1, InEditorSettings.GridSpacing);
+    Data.CellSize = static_cast<float>(std::max(1, InEditorSettings.GridSpacing));
     Data.SubCellSize = Data.CellSize * 0.1f;
     // 깊이를 기록하지 않는 Grid 위로 뒤쪽 Z축이 덮이지 않도록 평면 반대편부터 그린다.
     const float AxisExtent = Frustum.AxisExtent.Z;

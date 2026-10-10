@@ -7,12 +7,11 @@
 struct FPSGridData
 {
 	// 원근 Grid Shader가 월드 평면을 복원하고 거리별 간격을 계산할 상수를 담는다.
-	FMatrix invViewProj;
+	FMatrix ViewProj;
 	FVector CameraPos;
-	int32 CellSize;
+	float CellSize;
 	float SubCellSize;
-	int32 GridPlaneType;
-	float Padding[2];
+	float Padding[3];
 };
 
 enum class EGridPlane : int32
@@ -53,8 +52,6 @@ public:
 
 	// Grid·축 Shader와 정점·상수 버퍼 및 깊이·블렌드 상태를 준비한다.
 	bool Init(FRenderer* InRenderer);
-	// 기존 렌더 진입점 선언이며 현재 호출은 원근·직교 전용 함수를 사용한다.
-	void OnRender(const FMatrix& ViewProj, const FVector& CameraPos);
 
 	// 원근 Grid 앞뒤로 Z축을 나눠 합성하고 음수 Z는 낮은 불투명도로 그린다.
 	void OnRenderPSGrid(const FMatrix& ViewProj, const FVector& CameraPos, const FEditorSettings& InEditorSettings, const FViewportSettings& Viewport);
