@@ -515,7 +515,7 @@ void FRenderer::UpdateMaterialParams(const FRenderPacket& RenderPacket)
 		FStaticMeshMaterialParams Params{};
 		Params.BaseColor = RenderPacket.Material->BaseColor;
 		Params.UVOffset = RenderPacket.Material->UVScrollSpeed * TotalTime;
-		Params.bOpaque = RenderPacket.Material->BlendState == EBlendState::Opaque ? 1.0f : 0.0f;
+		Params.bOpaque = RenderPacket.Material->BlendState == EBlendState::Opaque ? 1u : 0u;
 		Params.Shininess = RenderPacket.Material->Shininess;
 		const FLinearColor& Specular = RenderPacket.Material->SpecularColor;
 		Params.SpecularColor = FVector(Specular.R, Specular.G, Specular.B);

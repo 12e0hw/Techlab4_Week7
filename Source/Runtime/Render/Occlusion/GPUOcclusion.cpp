@@ -525,7 +525,7 @@ void FGPUOcclusion::DrawOccluders(const FPrimitiveSceneProxy* const* Proxies, co
 
 		if (bAnyOpaque)
 		{
-			std::memcpy(Slots + size_t(Selected) * ObjectSlotBytes, &Proxy->GetLocalToWorld(), sizeof(FMatrix));
+			WriteObjectSlot(Slots, Selected, Proxy->GetLocalToWorld(), Proxy->GetNormalMatrix());
 			++Selected;
 		}
 	}
