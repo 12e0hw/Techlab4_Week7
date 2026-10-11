@@ -493,6 +493,44 @@ namespace
 
 					ImGui::TableNextRow();
 
+					ImGui::TableSetColumnIndex(0);
+					ImGui::Text("Shininess");
+
+					ImGui::TableSetColumnIndex(1);
+					ImGui::SetNextItemWidth(-1.0f);
+
+					float TempShininess = Effective ? Effective->Shininess : 32.0f;
+					if (ImGui::DragFloat("##Shininess", &TempShininess, 1.0f, 1.0f, 1024.0f))
+					{
+						Override = EnsureMaterialOverride(MeshComponent, Slot, Effective, Override);
+						if (Override)
+						{
+							Override->Shininess = TempShininess;
+							Effective = Override;
+						}
+					}
+
+					ImGui::TableNextRow();
+
+					ImGui::TableSetColumnIndex(0);
+					ImGui::Text("Specular Color");
+
+					ImGui::TableSetColumnIndex(1);
+					ImGui::SetNextItemWidth(-1.0f);
+
+					FLinearColor TempSpecular = Effective ? Effective->SpecularColor : FLinearColor(0.5f, 0.5f, 0.5f, 1.0f);
+					if (ColorEditLinear("##SpecularColor", &TempSpecular.R, ImGuiColorEditFlags_NoAlpha))
+					{
+						Override = EnsureMaterialOverride(MeshComponent, Slot, Effective, Override);
+						if (Override)
+						{
+							Override->SpecularColor = TempSpecular;
+							Effective = Override;
+						}
+					}
+
+					ImGui::TableNextRow();
+
 					// 5: Sampler State
 					ImGui::TableSetColumnIndex(0);
 					ImGui::Text("Sampler");

@@ -180,6 +180,22 @@ namespace
 					return false;
 				}
 			}
+			else if (Keyword == "Ks")
+			{
+				if (!(Stream >> MtlInfo.Ks.X >> MtlInfo.Ks.Y >> MtlInfo.Ks.Z))
+				{
+					HTR_LOG(Warning, "[MTL] {}:{}: invalid Ks '{}'", Path, LineNumber, Line);
+					return false;
+				}
+			}
+			else if (Keyword == "Ns")
+			{
+				if (!(Stream >> MtlInfo.Ns))
+				{
+					HTR_LOG(Warning, "[MTL] {}:{}: invalid Ns '{}'", Path, LineNumber, Line);
+					return false;
+				}
+			}
 		}
 		if (!MtlInfo.Name.empty())
 		{
@@ -389,6 +405,9 @@ bool FObjImporter::Cook(const FObjInfo& Raw, FStaticMeshData& Out)
 		CookedMtl.Name = RawMtl.Name;
 		CookedMtl.BaseColor = FLinearColor(RawMtl.Kd.X, RawMtl.Kd.Y, RawMtl.Kd.Z, RawMtl.D);
 		CookedMtl.DiffuseTexturePath = RawMtl.MapKd;
+		// Ns 0은 pow(x, 0) = 1이 되어 면 전체가 하이라이트로 덮인다.
+		CookedMtl.Shininess = std::max(RawMtl.Ns, 1.0f);
+		CookedMtl.SpecularColor = FLinearColor(RawMtl.Ks.X, RawMtl.Ks.Y, RawMtl.Ks.Z, 1.0f);
 		Cooked.MaterialSlots.Add(std::move(CookedMtl));
 	}
 

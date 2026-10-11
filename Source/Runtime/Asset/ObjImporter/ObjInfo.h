@@ -50,6 +50,8 @@ struct FObjMaterialInfo
 	FVector Kd = FVector(1.0f, 1.0f, 1.0f);
 	FString MapKd; // 저장소 루트 기준
 	float D = 1.0f;
+	float Ns = 32.0f;
+	FVector Ks = FVector(0.5f, 0.5f, 0.5f);
 };
 
 struct FObjInfo

@@ -73,6 +73,8 @@ namespace
 				return nullptr;
 			}
 			Material->BaseColor = Slot.BaseColor;
+			Material->Shininess = Slot.Shininess;
+			Material->SpecularColor = Slot.SpecularColor;
 			if (Material->BaseColor.A < 1.0f)
 			{
 				Material->BlendState = EBlendState::AlphaBlend;

@@ -516,9 +516,13 @@ void FRenderer::UpdateMaterialParams(const FRenderPacket& RenderPacket)
 		Params.BaseColor = RenderPacket.Material->BaseColor;
 		Params.UVOffset = RenderPacket.Material->UVScrollSpeed * TotalTime;
 		Params.bOpaque = RenderPacket.Material->BlendState == EBlendState::Opaque ? 1.0f : 0.0f;
+		Params.Shininess = RenderPacket.Material->Shininess;
+		const FLinearColor& Specular = RenderPacket.Material->SpecularColor;
+		Params.SpecularColor = FVector(Specular.R, Specular.G, Specular.B);
 
 		RenderCommand::UpdateBufferData(RenderPacket.Material->ParamBuffer.get(), &Params, sizeof(FStaticMeshMaterialParams));
-		RenderCommand::BindConstantBuffer(1, RenderPacket.Material->ParamBuffer.get(), EShaderBindFlagBits::Pixel);
+		// Gouraud는 VS에서 스페큘러를 계산하므로 Shininess가 VS에도 필요하다.
+		RenderCommand::BindConstantBuffer(1, RenderPacket.Material->ParamBuffer.get(), EShaderBindFlagBits::Vertex | EShaderBindFlagBits::Pixel);
 		break;
 	}
 	case EMaterialParamLayout::ParticleSubUV:

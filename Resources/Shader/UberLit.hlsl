@@ -24,7 +24,9 @@ cbuffer MaterialParams : register(b1)
     float4 BaseColor;
     float2 UVOffset;
     float bOpaque;
-    float Padding;
+    float Shininess;
+    float3 SpecularColor;
+    float MaterialPadding;
 };
 
 // FPerObjectConstants
