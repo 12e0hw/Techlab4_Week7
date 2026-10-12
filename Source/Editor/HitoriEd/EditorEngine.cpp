@@ -631,8 +631,17 @@ void UEditorEngine::RenderOverlayPass(const int32 ViewIndex, UWorld& ViewWorld, 
 	{
 		LineBatcher->BeginFrame();
 		LineBatcher->BuildVertexBuffer(ViewWorld);
+		for (TObjectIterator<UDirectionalLightComponent> DirLight; DirLight; ++DirLight)
+		{
+			if (DirLight && DirLight->GetOwner() && DirLight->GetOwner()->GetWorld() == &ViewWorld)
+			{
+				DirLight->DrawDebug(LineBatcher.get());
+			}
+		}
 		LineBatcher->OnRender(ViewProjection);
 	}
+
+
 
 	// Grid는 후처리(안개·FXAA)가 끝난 뒤 합성하는 에디터 표시라 안개를 적용하지 않는다.
 	// 원근은 픽셀 셰이더 Grid, 직교는 선 Grid를 쓴다 (언리얼 에디터와 같은 구분).

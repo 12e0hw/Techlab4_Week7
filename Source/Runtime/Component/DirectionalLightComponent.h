@@ -2,6 +2,8 @@
 
 #include "LightComponent.h"
 
+class FLineBatcher;
+
 class UDirectionalLightComponent : public ULightComponent
 {
 	DECLARE_CLASS(UDirectionalLightComponent, ULightComponent)
@@ -14,6 +16,8 @@ public:
 
 	FDirectionalLightInfo GetDirectionalLightInfo() const;
 	virtual FLightSceneProxy* CreateSceneProxy() override;
+
+	void DrawDebug(FLineBatcher* LineBatcher) const;
 
 private:
 };

@@ -7,6 +7,7 @@ cbuffer constants : register(b0)
 struct VS_INPUT
 {
     float3 position : POSITION;
+    float2 uv : TEXCOORD;
     float4 color : COLOR;
 };
 
@@ -28,5 +29,5 @@ PS_INPUT mainVS(VS_INPUT input)
 
 float4 mainPS(PS_INPUT input) : SV_TARGET
 {
-    return input.color + float4(0.5f, 0.5f, 0.5f, 0.0f);
+    return input.color;// + float4(0.5f, 0.5f, 0.5f, 0.0f);
 }
