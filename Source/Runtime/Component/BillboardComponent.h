@@ -1,22 +1,14 @@
 #pragma once
 
 #include "PrimitiveComponent.h"
-
-// ParticleSubUVShader의 b1. 빌보드와 파티클이 같은 셰이더를 쓴다.
-struct FSubUVConstants
-{
-	float CurrentFrame;
-	float AtlasRowSize;
-	float AtlasColSize;
-	float Alpha;
-};
+#include "Render/Material.h"
 
 class UBillboardComponent : public UPrimitiveComponent
 {
 	DECLARE_CLASS(UBillboardComponent, UPrimitiveComponent)
 
 	REFLECT_START(ClassName)
-		REFLECT_END()
+	REFLECT_END()
 
 public:
 	UBillboardComponent();
@@ -36,6 +28,17 @@ public:
 	virtual const FStaticMeshData* GetMeshData() const override { return QuadMesh ? &QuadMesh->GetMeshData() : nullptr; }
 	virtual FBox CalcLocalBounds() const override;
 
+	void SetTintColor(const FLinearColor& InColor) { BillboardParams.TintColor = InColor; bFollowLightColor = false; }
+	void SetTintColor(const FColor& InColor) { BillboardParams.TintColor = InColor.ReinterpretAsLinear(); bFollowLightColor = false; }
+	const FLinearColor& GetTintColor() const { return BillboardParams.TintColor; }
+
+	void SetFollowLightColor(bool bFollow) { bFollowLightColor = bFollow; }
+	bool IsFollowingLightColor() const { return bFollowLightColor; }
+
+	void SetTexture(UTexture2D* InTexture);
+	void SetTexture(const FString& TexturePath);
+	const FString& GetTexturePath() const { return TexturePath; }
+
 	void GetWorldTransformedMatrix(FMatrix* OutWorldMatrix) const;
 	// 기본 카메라 기준 월드 행렬로 Billboard 렌더 패킷을 제출한다.
 	virtual void SubmitToRenderQueue(FRenderQueue& RenderQueue) override;
@@ -49,6 +52,9 @@ public:
 protected:
 	UMaterial* Material = nullptr;
 	UStaticMesh* QuadMesh = nullptr;
+	FBillboardMaterialParams BillboardParams;
+	FString TexturePath;
+	bool bFollowLightColor = true;
 private:
 
 };

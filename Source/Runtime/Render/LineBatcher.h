@@ -21,10 +21,16 @@ public:
 
 	void AddLine(const FVector& A, const FVector& B, const FVector4& Color);
 	void AddBox(FBox BoundingBox, FVector4 Color);
-
 	// 로컬 AABB의 모서리를 각각 월드로 옮겨 그린다. 회전이 살아있는 OBB가 된다.
 	void AddOrientedBox(const FBox& LocalBox, const FMatrix& WorldMatrix, const FVector4& Color);
 	void AddPath(const TArray<FVector>& Points, const FVector4& Color);
+	void AddArrow(
+		const FVector& Start,
+		const FVector& Forward,
+		float Length,
+		float Thickness,
+		float HeadSize,
+		const FVector4& Color);
 
 	void Flush();
 	void OnRender(const FMatrix& ViewProjection);

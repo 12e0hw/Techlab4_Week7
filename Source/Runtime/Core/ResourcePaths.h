@@ -13,4 +13,10 @@ namespace ResourcePaths
 
 	constexpr const char* DefaultSkyPanorama = "Resources/SkySphere/Sky.jpg";
 	constexpr const char* DefaultParticleTexture = "Resources/SubUV/StarParticle.png";
+
+	// 라이트 빌보드 아이콘
+	constexpr const char* DirectionalLightIcon = "Resources/Icons/S_LightDirectional.png";
+	constexpr const char* PointLightIcon = "Resources/Icons/PointLight_64x.png";
+	constexpr const char* SpotLightIcon = "Resources/Icons/SpotLight_64x.png";
+	constexpr const char* SkyLightIcon = "Resources/Icons/SkyLight.png";
 }

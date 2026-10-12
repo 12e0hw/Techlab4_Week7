@@ -5,7 +5,7 @@
 
 enum class EViewMode
 {
-	Lit, Unlit, Wireframe,
+	Lit, Unlit, Wireframe, WorldNormal
 };
 
 enum class ELightingModel
@@ -18,6 +18,12 @@ enum class EShadingModel
 	Gouraud, Phong
 };
 
+// 씬 컬러에 색 대신 데이터를 그리는 뷰. 후처리가 값을 바꾸면 안 된다.
+inline bool IsDataVisualization(EViewMode Mode)
+{
+	return Mode == EViewMode::WorldNormal;
+}
+
 struct FViewRenderMode
 {
 	EViewMode ViewMode = EViewMode::Lit;
@@ -25,7 +31,7 @@ struct FViewRenderMode
 	EShadingModel ShadingModel = EShadingModel::Phong;
 };
 
-inline constexpr const char* ViewModeNames[] = { "Lit", "Unlit", "Wireframe" };
+inline constexpr const char* ViewModeNames[] = { "Lit", "Unlit", "Wireframe", "WorldNormal"};
 inline constexpr const char* LightingModelNames[] = { "Lambert", "Phong", "BlinnPhong" };
 inline constexpr const char* ShadingModelNames[] = { "Gouraud", "Phong" };
 
