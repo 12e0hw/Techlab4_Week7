@@ -495,6 +495,7 @@ bool FObjImporter::Cook(const FObjInfo& Raw, FStaticMeshData& Out)
 		CookedSection.IndexCount = static_cast<uint32>(Cooked.Indices.Num()) - CookedSection.StartIndex;
 		Cooked.Sections.Add(std::move(CookedSection));
 	}
+	// 실행 안됨
 	if (Raw.Normals.IsEmpty())
 	{
 		Cooked.CalculateNormals(Cooked.Vertices, Cooked.Indices);
