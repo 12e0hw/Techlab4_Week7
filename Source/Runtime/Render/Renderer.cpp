@@ -572,3 +572,8 @@ void FRenderer::UpdatePerObjectConstants(const FMatrix& World, const FMatrix& No
 
 	RenderCommand::UpdateBufferData(PerObjectCB.get(), &Constants);
 }
+
+bool FRenderer::EnsureTileLightCapacity(uint32 Width, uint32 Height)
+{
+	return TileLightCulling.EnsureTileCapacity(Width, Height);
+}

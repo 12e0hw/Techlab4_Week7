@@ -551,6 +551,7 @@ FWorldContext* UEditorEngine::GetPIEWorldContext(int32 WorldPIEInstance)
 // 입력 View의 Ray와 피킹으로 Gizmo·공유 선택을 갱신한다.
 void UEditorEngine::RenderOpaquePass(const int32 ViewIndex, const FRenderingInfo& ViewRenderingInfo, const FMatrix& ViewProjection, const FVector& ViewCameraLocation, const FVector& ViewCameraForward, FRenderQueue& RenderQueue)
 {
+	Renderer->EnsureTileLightCapacity(ViewRenderingInfo.ViewportSetting.Width, ViewRenderingInfo.ViewportSetting.Height);
 	RenderCommand::BeginRenderPass(ViewRenderingInfo);
 
 	const bool bDrawPrimitives = SettingsPanel->GetSettings().bDrawPrimitives;
