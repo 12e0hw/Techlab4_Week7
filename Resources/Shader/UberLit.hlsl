@@ -1,22 +1,59 @@
 #pragma pack_matrix(row_major)
 
+// EViewMode 순서와 일치해야 한다.
+#define VIEWMODE_LIT          0
+#define VIEWMODE_UNLIT        1
+#define VIEWMODE_WORLDNORMAL  3
+
+// ELightingModel 순서와 일치해야 한다.
+#define LIGHTING_MODEL_LAMBERT      0
+#define LIGHTING_MODEL_PHONG        1
+#define LIGHTING_MODEL_BLINNPHONG   2
+
+// EShadingModel 순서와 일치해야 한다.
+#define SHADING_MODEL_GOURAUD  0
+#define SHADING_MODEL_PHONG    1
+
 // 기본값: Lit, Blinn-Phong, Phong
-#ifndef UNLIT
-#define UNLIT 0             // 0 Lit, 1 Unlit
+#ifndef VIEWMODE
+#define VIEWMODE VIEWMODE_LIT
 #endif
 
 #ifndef LIGHTING_MODEL
-#define LIGHTING_MODEL 2    // 0 Lambert, 1 Phong, 2 Blinn-Phong
+#define LIGHTING_MODEL LIGHTING_MODEL_BLINNPHONG
 #endif
 
 #ifndef SHADING_MODEL
-#define SHADING_MODEL 1     // 0 Gouraud, 1 Phong
+#define SHADING_MODEL SHADING_MODEL_PHONG
 #endif
 
-#define GOURAUD (!UNLIT && SHADING_MODEL == 0)
+#define GOURAUD (VIEWMODE == VIEWMODE_LIT && SHADING_MODEL == SHADING_MODEL_GOURAUD)
 
 #define MAX_POINT_LIGHTS 4
 #define MAX_SPOT_LIGHTS 4
+
+float3 ACESFitted(float3 color)
+{
+    const float3x3 ACESInputMat =
+    {
+        { 0.59719, 0.35458, 0.04823 },
+        { 0.07600, 0.87577, 0.04823 },
+        { 0.02840, 0.13383, 0.83777 }
+    };
+    const float3x3 ACESOutputMat =
+    {
+        { 1.60475, -0.53108, -0.07367 },
+        { -0.10208, 1.10813, -0.00605 },
+        { -0.00327, -0.07276, 1.07602 }
+    };
+    float3 v = mul(ACESInputMat, color);
+
+    float3 a = v * (v + 0.0245786f) - 0.000090537f;
+    float3 b = v * (0.983729f * v + 0.4329510f) + 0.238081f;
+    float3 c = a / b;
+    return saturate(mul(ACESOutputMat, c));
+}
+
 
 struct FAmbientLightInfo
 {
@@ -133,11 +170,11 @@ void AccumulateLight(float3 Il, float3 N, float3 L, float3 V, float n, inout flo
     DiffuseLight += Il * NdotL; // Lambert
     if (NdotL > 0.0f)
     {
-#if LIGHTING_MODEL == 1 // Phong
+#if LIGHTING_MODEL == LIGHTING_MODEL_PHONG
         float3 R = 2.0f * dot(N, L) * N - L;
         // ★ NdotL을 곱해 빛이 스치는 어두운 곳에서는 스펙큘러가 0으로 부드럽게 사라지게 함
         SpecularLight += SpecularTerm(Il, R, V, n) * NdotL;
-#elif LIGHTING_MODEL == 2 // Blinn-Phong
+#elif LIGHTING_MODEL == LIGHTING_MODEL_BLINNPHONG
         float3 H = normalize(L + V);
         SpecularLight += SpecularTerm(Il, N, H, n) * NdotL;
 #endif
@@ -253,20 +290,24 @@ float4 mainPS(FPSInput Input) : SV_TARGET
     // TBN 행렬을 이용하여 월드 공간으로 변환
     float3 WorldNormal = mul(TextureNormal, TBN);
 
-#if UNLIT               // Unlit
+#if VIEWMODE == VIEWMODE_UNLIT
     FinalColor = float4(Albedo, Alpha);
-#else                   // Lit
+#elif VIEWMODE == VIEWMODE_WORLDNORMAL
+    // 색이 아니라 데이터이므로 Gamma Encode Pass에서 인코딩하지 않는다.
+    FinalColor = float4(normalize(WorldNormal) * 0.5f + 0.5f, 1.0f);
+#else // Lit
     float3 DiffuseLight;
     float3 SpecularLight;
-#if SHADING_MODEL == 0  // Gouraud
+#if SHADING_MODEL == SHADING_MODEL_GOURAUD
     DiffuseLight = Input.DiffuseLight;
     SpecularLight = Input.SpecularLight;
-#else                   // Phong
+#else // Phong
     float3 N = normalize(WorldNormal);
     float3 V = normalize(CameraPosition - Input.WorldPosition);
     ComputeLighting(N, Normal, Input.WorldPosition, V, Shininess, DiffuseLight, SpecularLight);
 #endif
     FinalColor = float4(Ka * AmbientLight.Color + Kd * DiffuseLight + Ks * SpecularLight, Alpha);
+    FinalColor.rgb = ACESFitted(FinalColor.rgb);
 #endif
     return FinalColor;
 }
