@@ -3,6 +3,7 @@
 #include "RenderPacket.h"
 #include "Texture2D.h"
 #include "Text/Font.h"
+#include "RenderEnums.h"
 
 #include "RenderingInfo.h"
 #include "Occlusion/GPUOcclusion.h"
@@ -125,11 +126,15 @@ public:
 	void SetLightConstants(const FLightConstants& InLightConstants);
 	void SetFireBallLight(const FLightConstants& InLightConstants) { SetLightConstants(InLightConstants); }
 
-	void SetShadingModelOverride(int32 InOverride) { ShadingModelOverride = InOverride; }
-	int32 GetShadingModelOverride() const { return ShadingModelOverride; }
+	void SetViewShadingModel(EShadingModel InModel) { ViewShadingModel = InModel; }
+	EShadingModel GetViewShadingModel() const { return ViewShadingModel; }
+
+	// 하위 호환성 헬퍼
+	void SetShadingModelOverride(int32 InOverride) { ViewShadingModel = (InOverride >= 0 && InOverride < static_cast<int32>(EShadingModel::Count)) ? static_cast<EShadingModel>(InOverride) : EShadingModel::Default; }
+	int32 GetShadingModelOverride() const { return static_cast<int32>(ViewShadingModel); }
 
 private:
-	int32 ShadingModelOverride = -1; // -1: Material Default, 0: Gouraud, 1: Lambert, 2: BlinnPhong
+	EShadingModel ViewShadingModel = EShadingModel::Default;
 	// FIFO 소비용 배열의 용량만 재사용하며 매 View의 패킷 값은 새로 채운다.
 	FRenderQueue RenderPackets;
 	// 정렬된 RenderPackets에서 반투명 패킷이 시작되는 위치

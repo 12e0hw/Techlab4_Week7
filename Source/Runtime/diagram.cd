@@ -1,0 +1,123 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<ClassDiagram MajorVersion="1" MinorVersion="1">
+  <Class Name="UObject" Collapsed="true">
+    <Position X="10.75" Y="1.75" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>BACIBhIgIQBBAAAAAQQAARUQCDBAAAgAgACgQmBABAA=</HashCode>
+      <FileName>UObject\Object.h</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="UActorComponent" Collapsed="true">
+    <Position X="10.75" Y="3" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AgEAAACYAoAAAAAAEAAAAAACACAAAIAAAAIBAIAgAAA=</HashCode>
+      <FileName>Component\ActorComponent.h</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="UTextRenderComponent" Collapsed="true">
+    <Position X="7.5" Y="7.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAABAAAAhAAIABIAIIEAACAQAgAMAAAAAAACAQmIAA=</HashCode>
+      <FileName>Component\TextRenderComponent.h</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="UStaticMeshComponent" Collapsed="true">
+    <Position X="9.75" Y="8.75" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AQAAAQAAQgAAIAAAAAAAAAAAwAECGAAAAAAAAAAgAAA=</HashCode>
+      <FileName>Component\StaticMeshComponent.h</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="USpotLightComponent" Collapsed="true">
+    <Position X="21" Y="6" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AQCAAAEAAQAQAAUAAQAAAQAMMAAAAAAIAIAAAAAAsAA=</HashCode>
+      <FileName>Component\SpotLightComponent.h</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="URotatingMovementComponent" Collapsed="true">
+    <Position X="3" Y="6" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAgAAAAAAACAAAAAAAIAAAAAAAAAAAAAAAAA=</HashCode>
+      <FileName>Component\RotatingMovementComponent.h</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="UProjectileMovementComponent" Collapsed="true">
+    <Position X="0.75" Y="6" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>gQAhFAAAQgAAAAAkAAEFgAACEQIgUAEBAAaBBYECQIE=</HashCode>
+      <FileName>Component\ProjectileMovementComponent.h</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="UPrimitiveComponent" Collapsed="true">
+    <Position X="9.75" Y="6" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AgAAEEAAQAEIMAACEAAIEAAAwAAAAAAEEAAAAECgEAA=</HashCode>
+      <FileName>Component\PrimitiveComponent.h</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="UParticleSubUVComponent" Collapsed="true">
+    <Position X="12" Y="8.75" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>gwAAAAAAQgIgCAAEAgQggJAAQwAQACkAgSAAAQAgACA=</HashCode>
+      <FileName>Component\ParticleSubUVComponent.h</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="UMovementComponent" Collapsed="true">
+    <Position X="1.75" Y="4.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>QAAAQAAgAgAIAAAASAAgBAACCAAAAAAAAAEAAAAkAIA=</HashCode>
+      <FileName>Component\MovementComponent.h</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="UMeshComponent" Collapsed="true">
+    <Position X="9.75" Y="7.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>BAAAAEAAIgAAAAAAAACAAAAAgCADCAAEAAAAAAAgAQA=</HashCode>
+      <FileName>Component\MeshComponent.h</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="ULightComponent" Collapsed="true">
+    <Position X="21" Y="4.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=</HashCode>
+      <FileName>Component\LightComponent.h</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="UFireBallComponent" Collapsed="true">
+    <Position X="18.75" Y="6" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AQAYAAAgAAAAAgEAAAAAAAAKAAAAAAAAAAgAAAgAAAA=</HashCode>
+      <FileName>Component\FireBallComponent.h</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="UExponentialHeightFogComponent" Collapsed="true">
+    <Position X="16.5" Y="6" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>ACAAAAAgAAAAAAAABAggAAEAAAACAAAAAAAgAICCAAA=</HashCode>
+      <FileName>Component\ExponentialHeightFogComponent.h</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="UCameraComponent" Collapsed="true">
+    <Position X="14.25" Y="6" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>BCCRAZIAAggCwBiAEwEAEIAcgCgAIAoiUgACAAAAAAA=</HashCode>
+      <FileName>Camera\CameraComponent.h</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="UBillboardComponent" Collapsed="true">
+    <Position X="12" Y="7.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AEAAAEAQAgAAIAAAAAAAEAAAwCAAAQAEAAAACAAwAAA=</HashCode>
+      <FileName>Component\BillboardComponent.h</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="USceneComponent" Collapsed="true">
+    <Position X="13" Y="4.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>oAAgAAKgEokCACSQCQFAAFagACEIAAgAAAAAQEaAEAQ=</HashCode>
+      <FileName>Component\SceneComponent.h</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Font Name="맑은 고딕" Size="9" />
+</ClassDiagram>

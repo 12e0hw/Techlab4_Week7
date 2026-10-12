@@ -87,12 +87,17 @@ FShaderByteCode RenderUtil::GetOrCompile(const FString& ShaderPath, const char* 
 	if (IsCsoUpToDate(ShaderPath, OutCSOPath))
 	{
 		FShaderByteCode Cached = LoadByteCode(OutCSOPath);
-		if (Cached.IsValid()) return Cached;
+		if (Cached.IsValid())
+		{
+			return Cached;
+		}
 	}
 
 	FShaderByteCode Compiled = CompileShader(ShaderPath, EntryPoint, ShaderType, Defines);
 	if (Compiled.IsValid())
+	{
 		SaveByteCode(OutCSOPath, Compiled);
+	}
 
 	return Compiled;
 }

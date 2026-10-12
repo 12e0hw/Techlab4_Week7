@@ -463,12 +463,21 @@ void FRenderer::EndObjectConstants()
 // Material마다 Shader/Texture/Sampler/State 꽂기
 void FRenderer::BindMaterial(UMaterial* material)
 {
-	FShaderProgram* ShaderToBind = material->Shader;
-	if (material->ParamLayout == EMaterialParamLayout::StaticMesh && ShadingModelOverride >= 0 && ShadingModelOverride < (int32)EShadingModel::Count)
+	EShadingModel TargetModel = (ViewShadingModel != EShadingModel::Default)
+		? ViewShadingModel
+		: material->GetShadingModel();
+
+	if (TargetModel == EShadingModel::Default)
 	{
-		if (FShaderProgram* OverrideShader = FRenderResourceManager::GetShaderProgram("Resources/Shader/StaticMeshShader.hlsl", (EShadingModel)ShadingModelOverride))
+		TargetModel = EShadingModel::Lambert;
+	}
+
+	FShaderProgram* ShaderToBind = material->Shader;
+	if (material->ParamLayout == EMaterialParamLayout::StaticMesh)
+	{
+		if (FShaderProgram* FoundShader = FRenderResourceManager::GetShaderProgram("Resources/Shader/StaticMeshShader.hlsl", TargetModel))
 		{
-			ShaderToBind = OverrideShader;
+			ShaderToBind = FoundShader;
 		}
 	}
 

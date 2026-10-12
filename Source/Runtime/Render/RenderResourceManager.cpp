@@ -37,13 +37,14 @@ static const FShadingModelPermutationDef ShadingModelPermutations[] = {
 
 FString FRenderResourceManager::GetPermutationKey(const FString& InPath, EShadingModel ShadingModel)
 {
-	switch (ShadingModel)
+	for (const auto& Perm : ShadingModelPermutations)
 	{
-	case EShadingModel::Gouraud:    return InPath + "_Gouraud";
-	case EShadingModel::Lambert:    return InPath + "_Lambert";
-	case EShadingModel::BlinnPhong: return InPath + "_BlinnPhong";
-	default:                        return InPath;
+		if (Perm.Model == ShadingModel)
+		{
+			return InPath + Perm.Suffix;
+		}
 	}
+	return InPath;
 }
 
 void FRenderResourceManager::ScanShaders(const fs::path& ShaderRoot)
@@ -172,7 +173,7 @@ void FRenderResourceManager::LoadOrCompilePermutations(const FString& Path)
 		FString Key = GetPermutationKey(Path, Perm.Model);
 		ShaderProgramMap[Key] = MakeUnique<FShaderProgram>(VsRaw, PsRaw);
 
-		// 기본 Path(Lambert)도 매핑하여 기존 호출부 하위 호환성 유지
+		// 기본 Path도 매핑하여 기존 호출부 하위 호환성 유지
 		if (Perm.Model == EShadingModel::Lambert)
 		{
 			ShaderProgramMap[Path] = MakeUnique<FShaderProgram>(VsRaw, PsRaw);

@@ -257,17 +257,17 @@ void FViewportsPanel::OnRender()
             ImGui::SameLine();
         }
 
-        // 셰이딩 모델 뷰모드 오버라이드 (Default / Force Gouraud / Force Lambert / Force Blinn-Phong)
+        // 셰이딩 모델 뷰모드 (Default / Gouraud / Lambert / Blinn-Phong)
         if (GEngine)
         {
             if (FRenderer* Renderer = GEngine->GetEngineLoop().GetRenderer())
             {
-                int ShadingMode = Renderer->GetShadingModelOverride() + 1;
-                const char* ShadingLabels[] = { "Lit (Default)", "Force Gouraud", "Force Lambert", "Force Blinn-Phong" };
+                int ShadingMode = static_cast<int>(Renderer->GetViewShadingModel());
+                const char* ShadingLabels[] = { "Lit (Default)", "Gouraud", "Lambert", "Blinn-Phong" };
                 ImGui::SetNextItemWidth(125.0f);
-                if (ImGui::Combo("##ShadingOverride", &ShadingMode, ShadingLabels, 4))
+                if (ImGui::Combo("##ShadingModel", &ShadingMode, ShadingLabels, static_cast<int>(EShadingModel::Count)))
                 {
-                    Renderer->SetShadingModelOverride(ShadingMode - 1);
+                    Renderer->SetViewShadingModel(static_cast<EShadingModel>(ShadingMode));
                 }
                 ImGui::SameLine();
             }

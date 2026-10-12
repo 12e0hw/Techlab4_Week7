@@ -8,8 +8,9 @@ enum class EShaderType
 
 enum class EShadingModel : uint8
 {
-	Gouraud = 0,
-	Lambert = 1,
-	BlinnPhong = 2,
+	Default = 0,
+	Gouraud = 1,
+	Lambert = 2,
+	BlinnPhong = 3,
 	Count
 };

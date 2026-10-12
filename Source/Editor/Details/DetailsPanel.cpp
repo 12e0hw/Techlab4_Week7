@@ -538,8 +538,10 @@ namespace
 					ImGui::TableSetColumnIndex(1);
 					ImGui::SetNextItemWidth(-1.0f);
 
-					const char* ShadingModelItems[] = { "Gouraud", "Lambert", "Blinn-Phong" };
-					int ModelIndex = Effective ? static_cast<int>(Effective->GetShadingModel()) : static_cast<int>(EShadingModel::Lambert);
+					const char* ShadingModelItems[] = { "Default (Lambert)", "Gouraud", "Lambert", "Blinn-Phong" };
+					int ModelIndex = (Effective && static_cast<int>(Effective->GetShadingModel()) < static_cast<int>(EShadingModel::Count))
+						? static_cast<int>(Effective->GetShadingModel())
+						: static_cast<int>(EShadingModel::Default);
 					if (ImGui::BeginCombo("##ShadingModel", ShadingModelItems[ModelIndex]))
 					{
 						for (int i = 0; i < static_cast<int>(EShadingModel::Count); ++i)
