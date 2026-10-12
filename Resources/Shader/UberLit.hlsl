@@ -283,7 +283,7 @@ float4 mainPS(FPSInput Input) : SV_TARGET
     float3 Normal = normalize(Input.Normal);
     // 그람 슈미트 직교화
     float3 Tangent = normalize(Input.Tangent - dot(Input.Tangent, Normal) * Normal);
-    float3 BiTangent = cross(Normal, Tangent);
+    float3 BiTangent = cross(Tangent, Normal);
     float3x3 TBN = float3x3(Tangent, BiTangent, Normal);
     // Texture Normal 매핑
     float3 NormalSample = NormalTexture.Sample(AlbedoSampler, Input.UV + UVScrollOffset).xyz;
@@ -295,7 +295,7 @@ float4 mainPS(FPSInput Input) : SV_TARGET
     FinalColor = float4(Albedo, Alpha);
 #elif VIEWMODE == VIEWMODE_WORLDNORMAL
     // 색이 아니라 데이터이므로 Gamma Encode Pass에서 인코딩하지 않는다.
-    FinalColor = float4(normalize(Input.Normal) * 0.5f + 0.5f, 1.0f);
+    FinalColor = float4(normalize(WorldNormal) * 0.5f + 0.5f, 1.0f);
 #else // Lit
     float3 DiffuseLight;
     float3 SpecularLight;
@@ -303,7 +303,7 @@ float4 mainPS(FPSInput Input) : SV_TARGET
         DiffuseLight = Input.DiffuseLight;
         SpecularLight = Input.SpecularLight;
 #else // Phong
-    float3 N = normalize(Input.Normal);
+    float3 N = normalize(WorldNormal);
     float3 V = normalize(CameraPosition - Input.WorldPosition);
     ComputeLighting(N, Input.WorldPosition, V, Shininess, DiffuseLight, SpecularLight);
 #endif

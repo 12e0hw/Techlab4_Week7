@@ -92,7 +92,8 @@ namespace
 			}
 			if (!Slot.NormalTexturePath.empty())
 			{
-				UTexture2D* Texture = UAssetManager::Get().LoadTexture(Slot.NormalTexturePath);
+				// 노멀맵은 색이 아니라 방향 데이터라 sRGB 디코딩을 하면 벡터가 틀어진다
+				UTexture2D* Texture = UAssetManager::Get().LoadTexture(Slot.NormalTexturePath, true, false);
 				if (Texture)
 				{
 					Material->Textures[1] = Texture;
@@ -218,7 +219,8 @@ void UAssetManager::CreateDefaultTextures()
 	AssetMap["WhiteTexture"] = WhiteTexture;
 
 	// 노멀맵이 지정되지 않은 머티리얼을 위한 1x1 평면 노멀맵 텍스처.
-	const uint32 FlatNormalPixel = 0x8080FFFF; // RGBC = (128, 128, 255) => (0.5, 0.5, 1.0)
+	// uint32 리터럴로 쓰면 리틀 엔디안 때문에 RGBA 순서가 뒤집히므로 바이트 순서대로 적는다
+	const uint8 FlatNormalPixel[4] = { 128, 128, 255, 255 }; // RGBA => (0.5, 0.5, 1.0)
 
 	D3D11_TEXTURE2D_DESC NormalDesc{};
 	NormalDesc.Width = 1;
@@ -230,7 +232,7 @@ void UAssetManager::CreateDefaultTextures()
 	NormalDesc.Usage = D3D11_USAGE_IMMUTABLE;
 	NormalDesc.BindFlags = D3D11_BIND_SHADER_RESOURCE;
 
-	TUniquePtr<FTexture2D> NormalResource = RenderCommand::CreateTexture2D(NormalDesc, &FlatNormalPixel);
+	TUniquePtr<FTexture2D> NormalResource = RenderCommand::CreateTexture2D(NormalDesc, FlatNormalPixel);
 	if (!NormalResource)
 	{
 		return;

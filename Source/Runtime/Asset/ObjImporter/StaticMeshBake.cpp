@@ -21,7 +21,7 @@ static_assert(std::is_trivially_copyable_v<FLODSourceVertex>);
 namespace
 {
 	// FStaticMeshData, FVertexPNCT, FStaticMeshSection, FStaticMaterialSlot 구조가 바뀌면 올린다
-	constexpr uint32 BakeVersion = 5;
+	constexpr uint32 BakeVersion = 6;
 
 	struct FBakeHeader
 	{
