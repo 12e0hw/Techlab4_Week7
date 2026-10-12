@@ -69,7 +69,8 @@ bool FRenderer::Init()
 	PerObjectCB = RenderCommand::CreateConstantBuffer(sizeof(FPerObjectConstants));
 	ViewCB = RenderCommand::CreateConstantBuffer(sizeof(FViewConstants));
 	LightingCB = RenderCommand::CreateConstantBuffer(sizeof(FLightingConstants));
-	SetLighting(FLightingConstants{});
+	FLightingConstants LightingConstant{};
+	RenderCommand::UpdateBufferData(LightingCB.get(), &LightingConstant);
 
 	GPUOcclusion.Init();   // 실패해도 오클루전만 못 쓸 뿐 렌더링은 된다
 
@@ -469,9 +470,12 @@ void FRenderer::SetViewMode(const FViewRenderMode& Mode)
 	ViewModeShader = FRenderResourceManager::GetUberLitProgram(Mode);
 }
 
-void FRenderer::SetLighting(const FLightingConstants& Lighting)
+void FRenderer::SetLighting(const FLightingConstants& GlobalLights,
+	const TArray<FPointLightInfo>& PointLights, const TArray<FSpotLightInfo>& SpotLights)
 {
-	RenderCommand::UpdateBufferData(LightingCB.get(), &Lighting);
+	RenderCommand::UpdateBufferData(LightingCB.get(), &GlobalLights);
+	LocalLight.UploadLights(PointLights, SpotLights);
+
 }
 
 // Material마다 Shader/Texture/Sampler/State 꽂기

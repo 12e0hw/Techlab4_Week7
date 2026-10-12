@@ -8,6 +8,8 @@
 #include "ViewMode.h"
 #include "LightInfo.h"
 #include "Occlusion/GPUOcclusion.h"
+#include "TileLightCulling.h"
+#include "LocalLight.h"
 
 constexpr uint32 ObjectSlotBytes = 256;
 
@@ -65,7 +67,8 @@ public:
 	bool Init();
 
 	void SetViewMode(const FViewRenderMode& Mode);
-	void SetLighting(const FLightingConstants& Lighting);
+	void SetLighting(const FLightingConstants& GlobalLights,
+		const TArray<FPointLightInfo>& PointLights, const TArray<FSpotLightInfo>& SpotLights);
 
 	// 기존 단일 카메라의 ViewProjection으로 렌더 큐 전체를 그린다.
 	void RenderAll(FRenderQueue& InQueue, UCameraComponent* CameraComponent);
@@ -79,6 +82,8 @@ public:
 	// Gather 전에 World가 불러 가려진 물체를 거른다.
 	FGPUOcclusion& GetGPUOcclusion() { return GPUOcclusion; }
 
+	FTileLightCulling& GetTileLightCulling() { return TileLightCulling; }
+	
 	// 캐시된 스태틱 메시 경로: World::Gather가 조각별로 채운 묶음을 이번 프레임 불투명 패스에 넘긴다.
 	// 묶음 메모리는 World 소유이며 다음 Gather 전까지 유효하다. RenderQueueSorting이 묶음을 정렬하고 RenderOpaque가 그린다.
 	void ResetStaticDrawGroups() { StaticGroups.clear(); }
@@ -123,6 +128,8 @@ private:
 	ComPtr<ID3D11DepthStencilState> DepthLessEqualReadOnly;
 
 	FGPUOcclusion GPUOcclusion;
+	FLocalLight LocalLight;
+	FTileLightCulling TileLightCulling;
 
 	void DrawPackets(uint32 Begin, uint32 End, const FMatrix& ViewProjection);
 	void DrawStaticGroups();

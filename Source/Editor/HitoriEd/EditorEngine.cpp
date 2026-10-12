@@ -856,11 +856,16 @@ void UEditorEngine::UpdateGizmoAndPicking()
 }
 
 // View 행렬로 Scene·Grid·Gizmo·텍스트·Outline을 렌더한다.
-void UEditorEngine::RenderFrame(const int32 ViewIndex, UWorld& ViewWorld, const FRenderingInfo& SceneRenderingInfo, const FRenderingInfo& ViewRenderingInfo, const FMatrix& ViewProjection, const FVector& ViewCameraLocation, const FVector& ViewCameraForward, FRenderQueue& RenderQueue)
+void UEditorEngine::RenderFrame(const int32 ViewIndex, UWorld& ViewWorld, 
+	const FRenderingInfo& SceneRenderingInfo, const FRenderingInfo& ViewRenderingInfo, const FMatrix& ViewProjection, const FVector& ViewCameraLocation, const FVector& ViewCameraForward, FRenderQueue& RenderQueue)
 {
 	FLightingConstants Lighting;
+	TArray<FPointLightInfo> PointLights;
+	TArray<FSpotLightInfo> SpotLights;
+
 	ViewWorld.GetScene().BuildLightingConstants(Lighting);
-	Renderer->SetLighting(Lighting);
+	ViewWorld.GetScene().BuildStructuredLight(PointLights, SpotLights);
+	Renderer->SetLighting(Lighting, PointLights, SpotLights);
 
 	// 1. 불투명·반투명 Pass (Linear 씬 컬러)
 	RenderOpaquePass(ViewIndex, SceneRenderingInfo, ViewProjection, ViewCameraLocation, ViewCameraForward, RenderQueue);
