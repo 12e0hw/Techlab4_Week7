@@ -217,7 +217,7 @@ FPSInput mainVS(FVSInput Input)
     Output.Position = mul(WorldPosition, ViewProjection);
     Output.WorldPosition = WorldPosition.xyz;
     Output.Normal = mul(Input.Normal, (float3x3) NormalMatrix);
-    Output.Tangent = mul(Input.Tangent, (float3x3) NormalMatrix);
+    Output.Tangent = mul(Input.Tangent, (float3x3) World); // 역전치가 아닌 그냥 월드 행렬
     Output.UV = Input.UV;
 
 #if GOURAUD
