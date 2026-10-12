@@ -90,6 +90,14 @@ namespace
 					Material->Textures[0] = Texture;
 				}
 			}
+			if (!Slot.NormalTexturePath.empty())
+			{
+				UTexture2D* Texture = UAssetManager::Get().LoadTexture(Slot.NormalTexturePath);
+				if (Texture)
+				{
+					Material->Textures[1] = Texture;
+				}
+			}
 			Mesh->Materials.Add(Material);
 		}
 
@@ -208,6 +216,31 @@ void UAssetManager::CreateDefaultTextures()
 	WhiteTexture->SetPath("WhiteTexture");
 
 	AssetMap["WhiteTexture"] = WhiteTexture;
+
+	// 노멀맵이 지정되지 않은 머티리얼을 위한 1x1 평면 노멀맵 텍스처.
+	const uint32 FlatNormalPixel = 0x8080FFFF; // RGBC = (128, 128, 255) => (0.5, 0.5, 1.0)
+
+	D3D11_TEXTURE2D_DESC NormalDesc{};
+	NormalDesc.Width = 1;
+	NormalDesc.Height = 1;
+	NormalDesc.MipLevels = 1;
+	NormalDesc.ArraySize = 1;
+	NormalDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
+	NormalDesc.SampleDesc.Count = 1;
+	NormalDesc.Usage = D3D11_USAGE_IMMUTABLE;
+	NormalDesc.BindFlags = D3D11_BIND_SHADER_RESOURCE;
+
+	TUniquePtr<FTexture2D> NormalResource = RenderCommand::CreateTexture2D(NormalDesc, &FlatNormalPixel);
+	if (!NormalResource)
+	{
+		return;
+	}
+
+	UTexture2D* FlatNormalTexture = NewObject<UTexture2D>();
+	FlatNormalTexture->SetResource(std::move(NormalResource));
+	FlatNormalTexture->SetPath("FlatNormalTexture");
+
+	AssetMap["FlatNormalTexture"] = FlatNormalTexture;
 }
 
 void UAssetManager::CreateDefaultMeshes()
@@ -286,7 +319,7 @@ void UAssetManager::CreateDefaultMaterial()
 	UMaterial* DefaultMat = NewObject<UMaterial>();
 	DefaultMat->Shader = FRenderResourceManager::GetUberLitProgram(FViewRenderMode{});
 	DefaultMat->Textures.Add(GetAssetByPath<UTexture2D>("WhiteTexture"));
-
+	DefaultMat->Textures.Add(GetAssetByPath<UTexture2D>("FlatNormalTexture"));
 
 	DefaultMat->ParamLayout = EMaterialParamLayout::StaticMesh;
 	DefaultMat->ParamBuffer = RenderCommand::CreateConstantBuffer(sizeof(FStaticMeshMaterialParams));

@@ -1,0 +1,7 @@
+newmtl NormalMapTest
+Ka 0.000000 0.000000 0.000000
+Kd 1.000000 1.000000 1.000000
+Ks 0.200000 0.200000 0.200000
+Ns 32.000000
+map_Kd FlatNormalMap.png
+map_Bump Test2NormalMap.png
