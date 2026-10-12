@@ -1,44 +1,22 @@
 #pragma pack_matrix(row_major)
 
-// 기본값
+// 기본값: Lit, Blinn-Phong, Phong
 #ifndef UNLIT
-#define UNLIT 0
+#define UNLIT 0             // 0 Lit, 1 Unlit
 #endif
+
 #ifndef LIGHTING_MODEL
-#define LIGHTING_MODEL 0    // 0 Lambert, 1 Phong, 2 Blinn-Phong
+#define LIGHTING_MODEL 2    // 0 Lambert, 1 Phong, 2 Blinn-Phong
 #endif
+
 #ifndef SHADING_MODEL
 #define SHADING_MODEL 1     // 0 Gouraud, 1 Phong
 #endif
 
-// FViewConstants
-cbuffer Viewconstants : register(b0)
-{
-    matrix VP;
-    float3 CameraPosition;
-    float ViewPadding;
-};
+#define GOURAUD (!UNLIT && SHADING_MODEL == 0)
 
-cbuffer MaterialParams : register(b1)
-{
-    float4 BaseColor;
-    float2 UVOffset;
-    float bOpaque;
-    float Shininess;
-    float3 SpecularColor;
-    float MaterialPadding;
-};
-
-// FPerObjectConstants
-cbuffer Worldconstants : register(b2)
-{
-    matrix World;
-    matrix NormalMatrix; // World의 역전치
-};
-
-// FLightingConstants (LightInfo.h)
-#define NUM_POINT_LIGHT 4
-#define NUM_SPOT_LIGHT 4
+#define MAX_POINT_LIGHTS 4
+#define MAX_SPOT_LIGHTS 4
 
 struct FAmbientLightInfo
 {
@@ -72,60 +50,210 @@ struct FSpotLightInfo
     float CosOuterCone;
 };
 
-cbuffer Lighting : register(b3)
+struct FVSInput
 {
-    FAmbientLightInfo Ambient;
-    FDirectionalLightInfo Directional;
-    FPointLightInfo PointLights[NUM_POINT_LIGHT];
-    FSpotLightInfo SpotLights[NUM_SPOT_LIGHT];
+    float3 Position : POSITION;
+    float3 Normal : NORMAL;
+    float4 Color : COLOR; // 지금은 쓰지 않지만 나중에 쓰게 될 수 있음
+    float2 UV : TEXCOORD;
+};
+
+struct FPSInput
+{
+    float4 Position : SV_POSITION;
+    float3 Normal : NORMAL;
+    float2 UV : TEXCOORD0;
+    float3 WorldPosition : TEXCOORD1;
+#if GOURAUD
+    float3 DiffuseLight : TEXCOORD2;
+    float3 SpecularLight : TEXCOORD3;
+#endif
+};
+
+cbuffer ViewConstants : register(b0)
+{
+    matrix ViewProjection;
+    float3 CameraPosition;
+    float ViewPadding;
+};
+
+cbuffer StaticMeshMaterialParams : register(b1)
+{
+    float4 BaseColor;
+    float2 UVScrollOffset;
+    uint bOpaque;
+    float Shininess;
+    float3 SpecularColor;
+    float MaterialPadding;
+};
+
+cbuffer PerObjectConstants : register(b2)
+{
+    matrix World;
+    matrix NormalMatrix; // World의 역전치
+};
+
+cbuffer LightingConstants : register(b3)
+{
+    FAmbientLightInfo AmbientLight;
+    FDirectionalLightInfo DirectionalLight;
+    FPointLightInfo PointLights[MAX_POINT_LIGHTS];
+    FSpotLightInfo SpotLights[MAX_SPOT_LIGHTS];
     uint NumPointLights;
     uint NumSpotLights;
     float2 LightingPadding;
 };
 
-struct VS_INPUT
+Texture2D AlbedoTexture : register(t0);
+
+SamplerState AlbedoSampler : register(s0);
+
+float3 DiffuseTerm(float3 Il, float3 N, float3 L)
 {
-    float3 p : POSITION; // Input position from vertex buffer
-    float3 n : NORMAL;
-    float4 c : COLOR; // Input color from vertex buffer
-    float2 t : TEXCOORD;
-};
-
-struct PS_INPUT
-{
-    float4 position : SV_POSITION;
-    float3 normal : NORMAL;
-    float4 color : COLOR;
-    float2 uv : TEXCOORD0;
-    float3 worldPos : TEXCOORD1;
-};
-
-Texture2D g_txColor : register(t0);
-SamplerState g_Sample : register(s0);
-
-PS_INPUT mainVS(VS_INPUT input)
-{
-    PS_INPUT output;
-
-    output.worldPos = mul(float4(input.p, 1.0f), World).xyz;
-    output.position = mul(mul(float4(input.p, 1.0f), World), VP);
-    output.normal = mul(float4(input.n, 0.0f), NormalMatrix).xyz;
-    output.color = input.c;
-    output.uv = input.t;
-    return output;
+    return Il * max(dot(N, L), 0.0f);
 }
 
-float4 mainPS(PS_INPUT input) : SV_TARGET
+// Phong: A(R), B(V) Blinn-Phong: A(N), B(H)
+float3 SpecularTerm(float3 Il, float3 A, float3 B, float n)
 {
-    float4 texColor = g_txColor.Sample(g_Sample, input.uv + UVOffset);
-    float4 albedo = texColor * BaseColor;
-    
-    float alpha = bOpaque > 0.5f ? 1.0f : albedo.a;
-    
-#if UNLIT
-    return float4(albedo.rgb, alpha);
-#else
-    // [임시] Phase 5 확인용. Phase 6에서 조명 계산으로 바꾼다.
-    return float4(Ambient.Color, alpha);
+    return Il * pow(max(dot(A, B), 0.0f), n);
+}
+
+float ComputeDistanceAttenuation(float Distance, float Radius)
+{
+    return pow(saturate(1.0f - pow(Distance / Radius, 4)), 2);
+}
+
+void AccumulateLight(float3 Il, float3 N, float3 L, float3 V, float n, inout float3 DiffuseLight, inout float3 SpecularLight)
+{
+    DiffuseLight += DiffuseTerm(Il, N, L); // Lambert
+
+    if (dot(N, L) > 0.0f)
+    {
+#if LIGHTING_MODEL == 1 // Phong
+        float3 R = 2.0f * dot(N, L) * N - L;
+        SpecularLight += SpecularTerm(Il, R, V, n);
+#elif LIGHTING_MODEL == 2 // Blinn-Phong
+        float3 H = normalize(L + V);
+        SpecularLight += SpecularTerm(Il, N, H, n);
 #endif
+    }
+}
+
+void ComputeLighting(float3 N, float3 WorldPosition, float3 V, float n, out float3 DiffuseLight, out float3 SpecularLight)
+{
+    DiffuseLight = 0.0f;
+    SpecularLight = 0.0f;
+
+    // Directional
+    {
+        float3 Il = DirectionalLight.Color;
+        float3 L = -DirectionalLight.Direction;
+        AccumulateLight(Il, N, L, V, n, DiffuseLight, SpecularLight);
+    }
+
+    // Point
+    {
+        for (uint Index = 0; Index < NumPointLights; ++Index)
+        {
+            FPointLightInfo Light = PointLights[Index];
+
+            float3 ToLight = Light.Position - WorldPosition;
+            float Distance = length(ToLight);
+            float Radius = Light.AttenuationRadius;
+
+            if (Distance >= Radius)
+            {
+                continue;
+            }
+
+            float3 L = ToLight / Distance;
+            float DistanceAttenuation = ComputeDistanceAttenuation(Distance, Radius);
+            float3 Il = Light.Color * DistanceAttenuation;
+
+            AccumulateLight(Il, N, L, V, n, DiffuseLight, SpecularLight);
+        }
+    }
+
+    // Spot
+    {
+        for (uint Index = 0; Index < NumSpotLights; ++Index)
+        {
+            FSpotLightInfo Light = SpotLights[Index];
+
+            float3 ToLight = Light.Position - WorldPosition;
+            float Distance = length(ToLight);
+            float Radius = Light.AttenuationRadius;
+
+            if (Distance >= Radius)
+            {
+                continue;
+            }
+
+            float3 L = ToLight / Distance;
+            float DistanceAttenuation = ComputeDistanceAttenuation(Distance, Radius);
+
+            float CosAngle = dot(-L, Light.Direction);
+            float SpotAttenuation = Light.CosInnerCone == Light.CosOuterCone
+            ? (CosAngle > Light.CosOuterCone ? 1.0f : 0.0f)
+            : saturate((CosAngle - Light.CosOuterCone) / (Light.CosInnerCone - Light.CosOuterCone));
+
+            float3 Il = Light.Color * DistanceAttenuation * SpotAttenuation;
+
+            AccumulateLight(Il, N, L, V, n, DiffuseLight, SpecularLight);
+        }
+    }
+}
+
+FPSInput mainVS(FVSInput Input)
+{
+    FPSInput Output;
+
+    float4 WorldPosition = mul(float4(Input.Position, 1.0f), World);
+
+    Output.Position = mul(WorldPosition, ViewProjection);
+    Output.Normal = mul(float4(Input.Normal, 0.0f), NormalMatrix).xyz;
+    Output.UV = Input.UV;
+    Output.WorldPosition = WorldPosition.xyz;
+
+#if GOURAUD
+    float3 N = normalize(Output.Normal);
+    float3 V = normalize(CameraPosition - Output.WorldPosition);
+    ComputeLighting(N, Output.WorldPosition, V, Shininess, Output.DiffuseLight, Output.SpecularLight);
+#endif
+
+    return Output;
+}
+
+float4 mainPS(FPSInput Input) : SV_TARGET
+{
+    float4 FinalColor = float4(0.0f, 0.0f, 0.0f, 1.0f);
+
+    float4 TextureColor = AlbedoTexture.Sample(AlbedoSampler, Input.UV + UVScrollOffset);
+    float4 SurfaceColor = TextureColor * BaseColor;
+
+    float3 Albedo = SurfaceColor.rgb;
+    float Alpha = bOpaque ? 1.0f : SurfaceColor.a;
+
+    float3 Kd = Albedo;
+    float3 Ka = Kd; // 나중에 Ka 를 개별로 설정할 수 있음
+    float3 Ks = SpecularColor;
+
+#if UNLIT               // Unlit
+    FinalColor = float4(Albedo, Alpha);
+#else                   // Lit
+    float3 DiffuseLight;
+    float3 SpecularLight;
+#if SHADING_MODEL == 0  // Gouraud
+    DiffuseLight = Input.DiffuseLight;
+    SpecularLight = Input.SpecularLight;
+#else                   // Phong
+    float3 N = normalize(Input.Normal);
+    float3 V = normalize(CameraPosition - Input.WorldPosition);
+    ComputeLighting(N, Input.WorldPosition, V, Shininess, DiffuseLight, SpecularLight);
+#endif
+    FinalColor = float4(Ka * AmbientLight.Color + Kd * DiffuseLight + Ks * SpecularLight, Alpha);
+#endif
+
+    return FinalColor;
 }
