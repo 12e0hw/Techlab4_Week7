@@ -6,12 +6,13 @@
 
 #include "GameFramework/Actor.h"
 #include "Engine/World.h"
+#include "Component/LightComponentBase.h"
 
 // Billboard 컴포넌트의 초기 상태를 구성한다.
 UBillboardComponent::UBillboardComponent()
 {
 	QuadMesh = UAssetManager::GetAssetByPath<UStaticMesh>("ParticleQuad");
-	Material = UAssetManager::GetAssetByPath<UMaterial>("SubUVMaterial");
+	Material = UAssetManager::GetAssetByPath<UMaterial>("BillboardMaterial");
 }
 
 // Billboard 컴포넌트의 소멸을 처리한다.
@@ -23,7 +24,44 @@ UBillboardComponent::~UBillboardComponent()
 void UBillboardComponent::BeginPlay()
 {
 	Super::BeginPlay();
+	if (!Material)
+	{
+		Material = UAssetManager::GetAssetByPath<UMaterial>("BillboardMaterial");
+	}
+}
 
+void UBillboardComponent::SetTexture(UTexture2D* InTexture)
+{
+	if (!InTexture) return;
+
+	if (!Material)
+	{
+		Material = UAssetManager::GetAssetByPath<UMaterial>("BillboardMaterial");
+	}
+	if (!Material) return;
+
+	if (!Material->bIsInstance)
+	{
+		Material = UMaterial::CreateInstance(Material);
+	}
+
+	if (Material->Textures.Num() > 0)
+	{
+		Material->Textures[0] = InTexture;
+	}
+	else
+	{
+		Material->Textures.Add(InTexture);
+	}
+}
+
+void UBillboardComponent::SetTexture(const FString& InTexturePath)
+{
+	TexturePath = InTexturePath;
+	if (UTexture2D* Tex = UAssetManager::Get().LoadTexture(InTexturePath))
+	{
+		SetTexture(Tex);
+	}
 }
 
 // 부모 컴포넌트의 프레임 갱신을 호출한다.
@@ -87,18 +125,39 @@ void UBillboardComponent::SubmitToRenderQueue(FRenderQueue& RenderQueue)
 // View별 Billboard 행렬과 Material을 렌더 패킷에 담는다.
 void UBillboardComponent::SubmitToRenderQueue(FRenderQueue& RenderQueue, const FMatrix& BillboardWorldMatrix)
 {
-	if (QuadMesh == nullptr || Material == nullptr)
+	if (QuadMesh == nullptr)
 		return;
 
-	// b1을 채우지 않으면 앞서 그린 머티리얼의 상수를 SubUV 값으로 읽는다. 흰 스태틱 메시 뒤면 프레임 1이 되어 텍스처 밖을 샘플한다.
-	static constexpr FSubUVConstants WholeTexture{ 0.0f, 1.0f, 1.0f, 1.0f };
+	if (!Material)
+	{
+		Material = UAssetManager::GetAssetByPath<UMaterial>("BillboardMaterial");
+	}
+
+	if (!TexturePath.empty() && (!Material || !Material->bIsInstance))
+	{
+		if (UTexture2D* Tex = UAssetManager::Get().LoadTexture(TexturePath))
+		{
+			SetTexture(Tex);
+		}
+	}
+
+	if (Material == nullptr)
+		return;
+
+	if (bFollowLightColor)
+	{
+		if (const ULightComponentBase* LightParent = Cast<ULightComponentBase>(AttachParent))
+		{
+			BillboardParams.TintColor = LightParent->GetLightColor().ReinterpretAsLinear();
+		}
+	}
 
 	FRenderPacket Packet;
 	Packet.Mesh = QuadMesh;
 	Packet.Material = Material;
 	Packet.Model = RenderQueue.StoreWorldMatrix(BillboardWorldMatrix);
-	Packet.MaterialParamData = &WholeTexture;
-	Packet.MaterialParamDataSize = sizeof(FSubUVConstants);
+	Packet.MaterialParamData = &BillboardParams;
+	Packet.MaterialParamDataSize = sizeof(FBillboardMaterialParams);
 	RenderQueue.Add(Packet);
 }
 

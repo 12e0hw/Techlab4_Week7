@@ -1,5 +1,6 @@
 #include "EnginePCH.h"
 #include "SpotLightActor.h"
+#include "Core/ResourcePaths.h"
 
 ASpotLightActor::ASpotLightActor()
 {
@@ -9,4 +10,5 @@ ASpotLightActor::ASpotLightActor()
 	BillboardComponent = CreateDefaultSubobject<UBillboardComponent>("UBillboardComponent");
 	BillboardComponent->SetupAttachment(LightComponent);
 	BillboardComponent->SetHiddenInDetails(true);
+	BillboardComponent->SetTexture(ResourcePaths::SpotLightIcon);
 }

@@ -2,6 +2,15 @@
 
 #include "BillboardComponent.h"
 
+// ParticleSubUVShader의 b1
+struct FSubUVConstants
+{
+	float CurrentFrame;
+	float AtlasRowSize;
+	float AtlasColSize;
+	float Alpha;
+};
+
 struct FParticle
 {
 	// 파티클 한 개의 물리·수명·SubUV 프레임 상태를 담는다.
