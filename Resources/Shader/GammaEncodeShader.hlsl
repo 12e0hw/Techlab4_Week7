@@ -29,8 +29,8 @@ float4 mainPS(PSInput Input) : SV_TARGET
     // 입력과 출력 크기가 같으므로 샘플러 없이 같은 픽셀을 그대로 읽는다.
     float3 Linear = SceneColor.Load(int3(Input.Position.xy, 0)).rgb;
 
-    // 톤매핑이 없으므로 1을 넘는 HDR 값은 잘라낸다.
-    float3 Encoded = LinearToSRGB(saturate(Linear));
+    // HDR
+    float3 Encoded = LinearToSRGB(Linear);
 
     // 뷰포트 텍스처를 ImGui가 알파 블렌딩으로 그리므로 최종 출력은 불투명으로 고정한다.
     return float4(Encoded, 1.0f);
