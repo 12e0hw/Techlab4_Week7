@@ -92,7 +92,7 @@ namespace
 			}
 			if (!Slot.NormalTexturePath.empty())
 			{
-				UTexture2D* Texture = UAssetManager::Get().LoadTexture(Slot.NormalTexturePath);
+				UTexture2D* Texture = UAssetManager::Get().LoadTexture(Slot.NormalTexturePath, true, false);
 				if (Texture)
 				{
 					Material->Textures[1] = Texture;

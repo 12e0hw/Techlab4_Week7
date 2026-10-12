@@ -129,80 +129,81 @@ float ComputeDistanceAttenuation(float Distance, float Radius)
 
 void AccumulateLight(float3 Il, float3 N, float3 L, float3 V, float n, inout float3 DiffuseLight, inout float3 SpecularLight)
 {
-    DiffuseLight += DiffuseTerm(Il, N, L); // Lambert
-
-    if (dot(N, L) > 0.0f)
+    float NdotL = max(dot(N, L), 0.0f);
+    DiffuseLight += Il * NdotL; // Lambert
+    if (NdotL > 0.0f)
     {
 #if LIGHTING_MODEL == 1 // Phong
         float3 R = 2.0f * dot(N, L) * N - L;
-        SpecularLight += SpecularTerm(Il, R, V, n);
+        SpecularLight += SpecularTerm(Il, R, V, n) * NdotL;
 #elif LIGHTING_MODEL == 2 // Blinn-Phong
         float3 H = normalize(L + V);
-        SpecularLight += SpecularTerm(Il, N, H, n);
+        SpecularLight += SpecularTerm(Il, N, H, n) * NdotL;
 #endif
     }
 }
-
-void ComputeLighting(float3 N, float3 WorldPosition, float3 V, float n, out float3 DiffuseLight, out float3 SpecularLight)
+// 148번째 줄: GeoNormal 인자 추가
+void ComputeLighting(float3 N, float3 GeoNormal, float3 WorldPosition, float3 V, float n, out float3 DiffuseLight, out float3 SpecularLight)
 {
     DiffuseLight = 0.0f;
     SpecularLight = 0.0f;
 
-    // Directional
+    // Directional Light
     {
         float3 Il = DirectionalLight.Color;
         float3 L = -DirectionalLight.Direction;
-        AccumulateLight(Il, N, L, V, n, DiffuseLight, SpecularLight);
+        // 메시 면 자체가 빛을 등지고 있으면 부드럽게 0으로 차단
+        float GeoFactor = saturate(dot(GeoNormal, L) * 4.0f);
+        AccumulateLight(Il * GeoFactor, N, L, V, n, DiffuseLight, SpecularLight);
     }
 
-    // Point
+    // Point Light
     {
         for (uint Index = 0; Index < NumPointLights; ++Index)
         {
             FPointLightInfo Light = PointLights[Index];
-
             float3 ToLight = Light.Position - WorldPosition;
             float Distance = length(ToLight);
             float Radius = Light.AttenuationRadius;
-
             if (Distance >= Radius)
-            {
                 continue;
-            }
 
             float3 L = ToLight / Distance;
-            float DistanceAttenuation = ComputeDistanceAttenuation(Distance, Radius);
-            float3 Il = Light.Color * DistanceAttenuation;
+            // 메시 면 자체가 빛을 등지고 있으면 차단
+            float GeoFactor = saturate(dot(GeoNormal, L) * 4.0f);
+            if (GeoFactor <= 0.0f)
+                continue;
 
+            float DistanceAttenuation = ComputeDistanceAttenuation(Distance, Radius);
+            float3 Il = Light.Color * DistanceAttenuation * GeoFactor;
             AccumulateLight(Il, N, L, V, n, DiffuseLight, SpecularLight);
         }
     }
 
-    // Spot
+    // Spot Light
     {
         for (uint Index = 0; Index < NumSpotLights; ++Index)
         {
             FSpotLightInfo Light = SpotLights[Index];
-
             float3 ToLight = Light.Position - WorldPosition;
             float Distance = length(ToLight);
             float Radius = Light.AttenuationRadius;
-
             if (Distance >= Radius)
-            {
                 continue;
-            }
 
             float3 L = ToLight / Distance;
-            float DistanceAttenuation = ComputeDistanceAttenuation(Distance, Radius);
+            // 메시 면 자체가 빛을 등지고 있으면 차단
+            float GeoFactor = saturate(dot(GeoNormal, L) * 4.0f);
+            if (GeoFactor <= 0.0f)
+                continue;
 
+            float DistanceAttenuation = ComputeDistanceAttenuation(Distance, Radius);
             float CosAngle = dot(-L, Light.Direction);
             float SpotAttenuation = Light.CosInnerCone == Light.CosOuterCone
             ? (CosAngle > Light.CosOuterCone ? 1.0f : 0.0f)
             : saturate((CosAngle - Light.CosOuterCone) / (Light.CosInnerCone - Light.CosOuterCone));
 
-            float3 Il = Light.Color * DistanceAttenuation * SpotAttenuation;
-
+            float3 Il = Light.Color * DistanceAttenuation * SpotAttenuation * GeoFactor;
             AccumulateLight(Il, N, L, V, n, DiffuseLight, SpecularLight);
         }
     }
@@ -223,7 +224,7 @@ FPSInput mainVS(FVSInput Input)
 #if GOURAUD
     float3 N = normalize(Output.Normal);
     float3 V = normalize(CameraPosition - Output.WorldPosition);
-    ComputeLighting(N, Output.WorldPosition, V, Shininess, Output.DiffuseLight, Output.SpecularLight);
+    ComputeLighting(N, N, Output.WorldPosition, V, Shininess, Output.DiffuseLight, Output.SpecularLight);
 #endif
 
     return Output;
@@ -246,7 +247,7 @@ float4 mainPS(FPSInput Input) : SV_TARGET
     float3 Normal = normalize(Input.Normal);
     // 그람 슈미트 직교화
     float3 Tangent = normalize(Input.Tangent - dot(Input.Tangent, Normal) * Normal);
-    float3 BiTangent = cross(Normal, Tangent);
+    float3 BiTangent = cross(Tangent, Normal);
     float3x3 TBN = float3x3(Tangent, BiTangent, Normal);
     // Texture Normal 매핑
     float3 NormalSample = NormalTexture.Sample(AlbedoSampler, Input.UV + UVScrollOffset).xyz;
@@ -265,7 +266,7 @@ float4 mainPS(FPSInput Input) : SV_TARGET
 #else                   // Phong
     float3 N = normalize(WorldNormal);
     float3 V = normalize(CameraPosition - Input.WorldPosition);
-    ComputeLighting(N, Input.WorldPosition, V, Shininess, DiffuseLight, SpecularLight);
+    ComputeLighting(N, Normal, Input.WorldPosition, V, Shininess, DiffuseLight, SpecularLight);
 #endif
     FinalColor = float4(Ka * AmbientLight.Color + Kd * DiffuseLight + Ks * SpecularLight, Alpha);
 #endif
