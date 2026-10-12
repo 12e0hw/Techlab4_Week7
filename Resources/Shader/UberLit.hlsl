@@ -1,19 +1,33 @@
 #pragma pack_matrix(row_major)
 
+// EViewMode 순서와 일치해야 한다.
+#define VIEWMODE_LIT          0
+#define VIEWMODE_UNLIT        1
+#define VIEWMODE_WORLDNORMAL  3
+
+// ELightingModel 순서와 일치해야 한다.
+#define LIGHTING_MODEL_LAMBERT      0
+#define LIGHTING_MODEL_PHONG        1
+#define LIGHTING_MODEL_BLINNPHONG   2
+
+// EShadingModel 순서와 일치해야 한다.
+#define SHADING_MODEL_GOURAUD  0
+#define SHADING_MODEL_PHONG    1
+
 // 기본값: Lit, Blinn-Phong, Phong
-#ifndef UNLIT
-#define UNLIT 0             // 0 Lit, 1 Unlit
+#ifndef VIEWMODE
+#define VIEWMODE VIEWMODE_LIT
 #endif
 
 #ifndef LIGHTING_MODEL
-#define LIGHTING_MODEL 2    // 0 Lambert, 1 Phong, 2 Blinn-Phong
+#define LIGHTING_MODEL LIGHTING_MODEL_BLINNPHONG
 #endif
 
 #ifndef SHADING_MODEL
-#define SHADING_MODEL 1     // 0 Gouraud, 1 Phong
+#define SHADING_MODEL SHADING_MODEL_PHONG
 #endif
 
-#define GOURAUD (!UNLIT && SHADING_MODEL == 0)
+#define GOURAUD (VIEWMODE == VIEWMODE_LIT && SHADING_MODEL == SHADING_MODEL_GOURAUD)
 
 #define MAX_POINT_LIGHTS 4
 #define MAX_SPOT_LIGHTS 4
@@ -130,10 +144,10 @@ void AccumulateLight(float3 Il, float3 N, float3 L, float3 V, float n, inout flo
 
     if (dot(N, L) > 0.0f)
     {
-#if LIGHTING_MODEL == 1 // Phong
+#if LIGHTING_MODEL == LIGHTING_MODEL_PHONG
         float3 R = 2.0f * dot(N, L) * N - L;
         SpecularLight += SpecularTerm(Il, R, V, n);
-#elif LIGHTING_MODEL == 2 // Blinn-Phong
+#elif LIGHTING_MODEL == LIGHTING_MODEL_BLINNPHONG
         float3 H = normalize(L + V);
         SpecularLight += SpecularTerm(Il, N, H, n);
 #endif
@@ -225,6 +239,13 @@ FPSInput mainVS(FVSInput Input)
     return Output;
 }
 
+float3 SRGBToLinear(float3 S)
+{
+    float3 Low = S / 12.92f;
+    float3 High = pow(max((S + 0.055f) / 1.055f, 0.0f), 2.4f);
+    return lerp(High, Low, step(S, 0.04045f));
+}
+
 float4 mainPS(FPSInput Input) : SV_TARGET
 {
     float4 FinalColor = float4(0.0f, 0.0f, 0.0f, 1.0f);
@@ -239,15 +260,19 @@ float4 mainPS(FPSInput Input) : SV_TARGET
     float3 Ka = Kd; // 나중에 Ka 를 개별로 설정할 수 있음
     float3 Ks = SpecularColor;
 
-#if UNLIT               // Unlit
+#if VIEWMODE == VIEWMODE_UNLIT
     FinalColor = float4(Albedo, Alpha);
-#else                   // Lit
+#elif VIEWMODE == VIEWMODE_WORLDNORMAL
+    // 뒤따르는 Gamma Encode Pass가 LinearToSRGB를 적용하므로, 미리 역변환해 화면에 N * 0.5 + 0.5가 그대로 나오게 한다.
+    float3 EncodedNormal = normalize(Input.Normal) * 0.5f + 0.5f;
+    FinalColor = float4(SRGBToLinear(EncodedNormal), 1.0f);
+#else // Lit
     float3 DiffuseLight;
     float3 SpecularLight;
-#if SHADING_MODEL == 0  // Gouraud
-    DiffuseLight = Input.DiffuseLight;
-    SpecularLight = Input.SpecularLight;
-#else                   // Phong
+#if SHADING_MODEL == SHADING_MODEL_GOURAUD
+        DiffuseLight = Input.DiffuseLight;
+        SpecularLight = Input.SpecularLight;
+#else // Phong
     float3 N = normalize(Input.Normal);
     float3 V = normalize(CameraPosition - Input.WorldPosition);
     ComputeLighting(N, Input.WorldPosition, V, Shininess, DiffuseLight, SpecularLight);

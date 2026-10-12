@@ -5,7 +5,7 @@
 
 enum class EViewMode
 {
-	Lit, Unlit, Wireframe,
+	Lit, Unlit, Wireframe, WorldNormal
 };
 
 enum class ELightingModel
@@ -25,7 +25,7 @@ struct FViewRenderMode
 	EShadingModel ShadingModel = EShadingModel::Phong;
 };
 
-inline constexpr const char* ViewModeNames[] = { "Lit", "Unlit", "Wireframe" };
+inline constexpr const char* ViewModeNames[] = { "Lit", "Unlit", "Wireframe", "WorldNormal"};
 inline constexpr const char* LightingModelNames[] = { "Lambert", "Phong", "BlinnPhong" };
 inline constexpr const char* ShadingModelNames[] = { "Gouraud", "Phong" };
 

@@ -863,8 +863,9 @@ void UEditorEngine::RenderFrame(const int32 ViewIndex, UWorld& ViewWorld, const 
 	}
 	else
 	{
-		//직교인 경우 안개 Pass를 그리지 않는다.
-		if (!MultipleViewportsAdapter.IsOrthographic(ViewIndex) && SettingsPanel->GetSettings().bExponentialHeightFog)
+		//직교인 경우 안개 Pass를 그리지 않는다. WorldNormal은 법선 값을 그대로 보여야 하므로 안개를 섞지 않는다.
+		const bool bWorldNormalView = MultipleViewportsAdapter.GetViewRenderMode(ViewIndex).ViewMode == EViewMode::WorldNormal;
+		if (!MultipleViewportsAdapter.IsOrthographic(ViewIndex) && !bWorldNormalView && SettingsPanel->GetSettings().bExponentialHeightFog)
 			// 2. 안개 Pass (Linear 씬 컬러)
 			RenderFogPass(ViewIndex, ViewWorld, SceneRenderingInfo, ViewCameraLocation, ViewProjection, RenderQueue);
 
