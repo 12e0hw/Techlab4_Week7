@@ -18,6 +18,29 @@
 #define MAX_POINT_LIGHTS 4
 #define MAX_SPOT_LIGHTS 4
 
+float3 ACESFitted(float3 color)
+{
+    const float3x3 ACESInputMat =
+    {
+        { 0.59719, 0.35458, 0.04823 },
+        { 0.07600, 0.87577, 0.04823 },
+        { 0.02840, 0.13383, 0.83777 }
+    };
+    const float3x3 ACESOutputMat =
+    {
+        { 1.60475, -0.53108, -0.07367 },
+        { -0.10208, 1.10813, -0.00605 },
+        { -0.00327, -0.07276, 1.07602 }
+    };
+    float3 v = mul(ACESInputMat, color);
+    
+    float3 a = v * (v + 0.0245786f) - 0.000090537f;
+    float3 b = v * (0.983729f * v + 0.4329510f) + 0.238081f;
+    float3 c = a / b;
+    return saturate(mul(ACESOutputMat, c));
+}
+
+
 struct FAmbientLightInfo
 {
     float3 Color;
@@ -253,6 +276,7 @@ float4 mainPS(FPSInput Input) : SV_TARGET
     ComputeLighting(N, Input.WorldPosition, V, Shininess, DiffuseLight, SpecularLight);
 #endif
     FinalColor = float4(Ka * AmbientLight.Color + Kd * DiffuseLight + Ks * SpecularLight, Alpha);
+    FinalColor.rgb = ACESFitted(FinalColor.rgb);
 #endif
 
     return FinalColor;
