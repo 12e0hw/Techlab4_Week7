@@ -267,12 +267,12 @@ void FViewportsPanel::OnRender()
 
             if (RenderMode.ViewMode == EViewMode::Lit)
             {
-                const char* LightModelLabels[] = {"Lambert", "Phong", "Blinn-Phong"};
-                int LightModel = static_cast<int>(RenderMode.LightModel);
+                const char* LightingModelLabels[] = {"Lambert", "Phong", "Blinn-Phong"};
+                int LightingModel = static_cast<int>(RenderMode.LightingModel);
                 ImGui::SetNextItemWidth(110.0f);
-                if (ImGui::Combo("##LightModel", &LightModel, LightModelLabels, IM_ARRAYSIZE(LightModelLabels)))
+                if (ImGui::Combo("##LightingModel", &LightingModel, LightingModelLabels, IM_ARRAYSIZE(LightingModelLabels)))
                 {
-                    RenderMode.LightModel = static_cast<ELightModel>(LightModel);
+                    RenderMode.LightingModel = static_cast<ELightingModel>(LightingModel);
                     bChanged = true;
                 }
                 ImGui::SetItemTooltip("Lighting Model");

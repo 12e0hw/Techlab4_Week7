@@ -152,7 +152,7 @@ bool FSettingsPanel::SaveSettings() const
         File << "View" << Index << "Preset=" << Snapshot.ViewPreset[Index] << "\n";
         const FViewRenderMode& RenderMode = Snapshot.ViewRenderMode[Index];
         File << "View" << Index << "ViewMode=" << ViewModeNames[static_cast<int32>(RenderMode.ViewMode)] << "\n";
-        File << "View" << Index << "LightModel=" << LightModelNames[static_cast<int32>(RenderMode.LightModel)] << "\n";
+        File << "View" << Index << "LightingModel=" << LightingModelNames[static_cast<int32>(RenderMode.LightingModel)] << "\n";
         File << "View" << Index << "ShadingModel=" << ShadingModelNames[static_cast<int32>(RenderMode.ShadingModel)] << "\n";
         File << "View" << Index << "LocationX=" << Snapshot.ViewLocation[Index].X << "\n";
         File << "View" << Index << "LocationY=" << Snapshot.ViewLocation[Index].Y << "\n";
@@ -203,8 +203,8 @@ bool FSettingsPanel::LoadSettings()
 					FViewRenderMode& RenderMode = Settings.ViewRenderMode[Index];
 					if (Key == Prefix + "ViewMode")
 						TryParseModeName(ValueStr, ViewModeNames, RenderMode.ViewMode);
-					else if (Key == Prefix + "LightModel")
-						TryParseModeName(ValueStr, LightModelNames, RenderMode.LightModel);
+					else if (Key == Prefix + "LightingModel")
+						TryParseModeName(ValueStr, LightingModelNames, RenderMode.LightingModel);
 					else if (Key == Prefix + "ShadingModel")
 						TryParseModeName(ValueStr, ShadingModelNames, RenderMode.ShadingModel);
 				}

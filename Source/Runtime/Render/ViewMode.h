@@ -8,7 +8,7 @@ enum class EViewMode
 	Lit, Unlit, Wireframe,
 };
 
-enum class ELightModel
+enum class ELightingModel
 {
 	Lambert, Phong, BlinnPhong,
 };
@@ -21,12 +21,12 @@ enum class EShadingModel
 struct FViewRenderMode
 {
 	EViewMode ViewMode = EViewMode::Lit;
-	ELightModel LightModel = ELightModel::BlinnPhong;
+	ELightingModel LightingModel = ELightingModel::BlinnPhong;
 	EShadingModel ShadingModel = EShadingModel::Phong;
 };
 
 inline constexpr const char* ViewModeNames[] = { "Lit", "Unlit", "Wireframe" };
-inline constexpr const char* LightModelNames[] = { "Lambert", "Phong", "BlinnPhong" };
+inline constexpr const char* LightingModelNames[] = { "Lambert", "Phong", "BlinnPhong" };
 inline constexpr const char* ShadingModelNames[] = { "Gouraud", "Phong" };
 
 template <typename TEnum, size_t N>

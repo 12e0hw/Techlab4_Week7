@@ -19,7 +19,7 @@ enum class EMaterialParamLayout
 struct FStaticMeshMaterialParams
 {
 	FLinearColor BaseColor;
-	FVector2 UVOffset;
+	FVector2 UVScrollOffset;
 	uint32 bOpaque; // 1이면 PS가 알파를 1로 출력한다
 	float Shininess;
 	FVector SpecularColor;

@@ -2,7 +2,7 @@
 
 #include "Math/Vector.h"
 
-// UberLit.hlsl의 NUM_POINT_LIGHT, NUM_SPOT_LIGHT
+// UberLit.hlsl의 MAX_POINT_LIGHTS, MAX_SPOT_LIGHTS
 constexpr uint32 MaxPointLights = 4;
 constexpr uint32 MaxSpotLights = 4;
 

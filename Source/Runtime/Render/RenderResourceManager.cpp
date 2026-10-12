@@ -94,7 +94,7 @@ FString FRenderResourceManager::GetUberLitSuffix(const FViewRenderMode& Mode)
 {
 	if (Mode.ViewMode != EViewMode::Lit)
 		return "_UNLIT";
-	return FString("_LM") + Digits[static_cast<int32>(Mode.LightModel)]
+	return FString("_LM") + Digits[static_cast<int32>(Mode.LightingModel)]
 		+ "_SM" + Digits[static_cast<int32>(Mode.ShadingModel)];
 }
 
@@ -121,7 +121,7 @@ void FRenderResourceManager::LoadUberLitPermutations()
 				{ "SHADING_MODEL",  Digits[SM] },
 				{ nullptr, nullptr }
 			};
-			const FViewRenderMode Mode{ EViewMode::Lit, static_cast<ELightModel>(LM), static_cast<EShadingModel>(SM) };
+			const FViewRenderMode Mode{ EViewMode::Lit, static_cast<ELightingModel>(LM), static_cast<EShadingModel>(SM) };
 			LoadOrCompileShader(UberLitPath, GetUberLitSuffix(Mode), Defines);
 		}
 	}
