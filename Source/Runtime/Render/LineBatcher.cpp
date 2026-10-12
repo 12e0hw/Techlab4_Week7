@@ -130,6 +130,62 @@ void FLineBatcher::AddPath(const TArray<FVector>& Points, const FVector4& Color)
 	}
 }
 
+void FLineBatcher::AddArrow(
+	const FVector& Start,
+	const FVector& Forward,
+	float Length,
+	float Thickness,
+	float HeadSize,
+	const FVector4& Color)
+{
+	const FVector UpGuide = (std::abs(Forward.Z) > 0.99f) ? FVector(0.0f, 1.0f, 0.0f) : FVector(0.0f, 0.0f, 1.0f);
+	const FVector Right = FVector::Cross(Forward, UpGuide).GetSafeNormal();
+	const FVector Up = FVector::Cross(Right, Forward).GetSafeNormal();
+
+	const FVector ShaftEnd = Start + Forward * (Length - HeadSize);
+	const FVector ArrowTip = Start + Forward * Length;
+
+	AddLine(Start, ShaftEnd, Color);
+
+	const float d = Thickness * 0.5f;
+	const FVector Offsets[8] = {
+		Right * d,               -Right * d,
+		Up * d,                  -Up * d,
+		(Right + Up) * (d * 0.7f), (Right - Up) * (d * 0.7f),
+		(-Right + Up) * (d * 0.7f), (-Right - Up) * (d * 0.7f)
+	};
+
+	for (int32 i = 0; i < 8; ++i)
+	{
+		AddLine(Start + Offsets[i], ShaftEnd + Offsets[i], Color);
+	}
+
+	constexpr int32 HEAD_SLICES = 24;
+	const float HeadRadius = HeadSize * 0.45f;
+	FVector PrevBasePoint, FirstBasePoint;
+
+	for (int32 i = 0; i < HEAD_SLICES; ++i)
+	{
+		const float Angle = (2.0f * PI * i) / HEAD_SLICES;
+		const FVector BasePoint = ShaftEnd + (Right * std::cosf(Angle) + Up * std::sinf(Angle)) * HeadRadius;
+
+		AddLine(ArrowTip, BasePoint, Color);
+
+		AddLine(ShaftEnd, BasePoint, Color);
+
+		if (i > 0)
+		{
+			AddLine(PrevBasePoint, BasePoint, Color);
+		}
+		else
+		{
+			FirstBasePoint = BasePoint;
+		}
+		PrevBasePoint = BasePoint;
+	}
+	AddLine(PrevBasePoint, FirstBasePoint, Color);
+}
+
 void FLineBatcher::Flush()
 {
 	RenderCommand::BindPipelineState(PipelineState);

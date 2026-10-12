@@ -14,7 +14,7 @@ void UPointLightComponent::PostEditChangeProperty(const FProperty& Property)
 FPointLightInfo UPointLightComponent::GetPointLightInfo() const
 {
 	FPointLightInfo Info;
-	Info.Color = GetLinearColorWithIntensity();
+	Info.Color = GetShaderColorWithIntensity();
 	Info.AttenuationRadius = AttenuationRadius;
 	Info.Position = GetWorldLocation();
 	return Info;

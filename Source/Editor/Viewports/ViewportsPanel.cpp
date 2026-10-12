@@ -514,9 +514,7 @@ void FViewportsPanel::BuildViewRenderingInfos(FRenderingInfo& OutSceneInfo, FRen
 	OutSceneInfo.ViewportSetting.Height = Height;
 	FRenderingDesc SceneColorDesc{};
 	SceneColorDesc.Texture = SceneColor;
-	// 지우기 색은 Linear 공간 값이다. 인코딩 후 예전과 같은 회색(sRGB 0.3)이 되도록 디코딩해 둔다.
-	const float ClearLinear = FLinearColor::SRGBToLinear(0.3f);
-	SceneColorDesc.ClearValue.ColorClearValue = FVector4(ClearLinear, ClearLinear, ClearLinear, 1.0f);
+	// 지우기 색은 작업 흐름에 따라 달라지므로 RenderOpaquePass에서 정한다.
 	OutSceneInfo.ColorRenderTargets.Add(SceneColorDesc);
 	OutSceneInfo.DepthStencil.Texture = Depth;
 

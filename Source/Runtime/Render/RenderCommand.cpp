@@ -8,6 +8,7 @@
 #include "Texture2D.h"
 #include "TextureCube.h"
 #include "RenderingInfo.h"
+#include "ColorWorkflow.h"
 
 void RenderCommand::Init(FRenderDevice* InRenderDevice)
 {
@@ -178,7 +179,8 @@ void RenderCommand::Unmap(FBuffer* InBuffer)
 
 void RenderCommand::BindShaderResource(uint32 Slot, FTexture2D* Texture2D, EShaderBindFlagBits FlagBits)
 {
-	ID3D11ShaderResourceView* SRV = Texture2D->GetSRV();
+	// 감마 모드에서는 sRGB 텍스처를 디코딩하지 않고 저장된 값 그대로 샘플링한다. sRGB가 아닌 텍스처는 두 뷰가 같다.
+	ID3D11ShaderResourceView* SRV = ColorWorkflow::bLinear ? Texture2D->GetSRV() : Texture2D->GetRawSRV();
 	if (HasFlag(FlagBits, EShaderBindFlagBits::Vertex))
 	{
 		RenderDevice->GetContext()->VSSetShaderResources(Slot, 1, &SRV);

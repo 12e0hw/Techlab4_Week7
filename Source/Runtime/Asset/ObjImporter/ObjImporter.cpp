@@ -495,11 +495,11 @@ bool FObjImporter::Cook(const FObjInfo& Raw, FStaticMeshData& Out)
 		CookedSection.IndexCount = static_cast<uint32>(Cooked.Indices.Num()) - CookedSection.StartIndex;
 		Cooked.Sections.Add(std::move(CookedSection));
 	}
-	// 실행 안됨
-	if (Raw.Normals.IsEmpty())
+	// TODO:: 실행 안됨 나중에 하드 엣지와 소프트 엣지를 구분해서 노말을 채워야 함 지금은 면벡터 사용
+	/*if (Raw.Normals.IsEmpty())
 	{
 		Cooked.CalculateNormals(Cooked.Vertices, Cooked.Indices);
-	}
+	}*/
 	Cooked.CalculateTangents(Cooked.Vertices, Cooked.Indices);
 
 	// AABB (변환이 끝난 Position 기준)

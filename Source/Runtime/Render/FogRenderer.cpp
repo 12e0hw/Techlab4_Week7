@@ -3,6 +3,7 @@
 #include "FogRenderer.h"
 #include "RenderCommand.h"
 #include "RenderResourceManager.h"
+#include "ColorWorkflow.h"
 
 
 bool FFogRenderer::Init(FRenderer* InRenderer)
@@ -38,6 +39,9 @@ void FFogRenderer::OnRender(FTexture2D* depthTexture, const FMatrix& ViewProject
 	Constants.InverseViewProjection = ViewProjection.Inverse();
 	Constants.CameraPosition = CameraPosition;
 	Constants.FogInfo = InFogInfo;
+	const FVector4& FogColor = InFogInfo.FogColor;
+	const FLinearColor ShaderFogColor = ColorWorkflow::ToShaderColor(FLinearColor(FogColor.X, FogColor.Y, FogColor.Z, FogColor.W));
+	Constants.FogInfo.FogColor = FVector4(ShaderFogColor.R, ShaderFogColor.G, ShaderFogColor.B, ShaderFogColor.A);
 	RenderCommand::UpdateBufferData(ConstantBuffer.get(), &Constants);
 	RenderCommand::BindConstantBuffer(0, ConstantBuffer.get(), EShaderBindFlagBits::Pixel);
 	RenderCommand::Draw(3);
