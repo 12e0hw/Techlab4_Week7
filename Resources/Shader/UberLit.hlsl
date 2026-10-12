@@ -249,16 +249,8 @@ float4 mainPS(FPSInput Input) : SV_TARGET
     float3 BiTangent = cross(Normal, Tangent);
     float3x3 TBN = float3x3(Tangent, BiTangent, Normal);
     // Texture Normal 매핑
-    float3 TextureNormal;
-    if (NormalTexture)
-    {
-        float3 NormalSample = NormalTexture.Sample(AlbedoSampler, Input.UV + UVScrollOffset).xyz;
-        TextureNormal = normalize(NormalSample * 2.0f - 1.0f);
-    }
-    else
-    {
-        TextureNormal = float3(0.0f, 0.0f, 1.0f);
-    }
+    float3 NormalSample = NormalTexture.Sample(AlbedoSampler, Input.UV + UVScrollOffset).xyz;
+    float3 TextureNormal = normalize(NormalSample * 2.0f - 1.0f);
     // TBN 행렬을 이용하여 월드 공간으로 변환
     float3 WorldNormal = mul(TextureNormal, TBN);
 

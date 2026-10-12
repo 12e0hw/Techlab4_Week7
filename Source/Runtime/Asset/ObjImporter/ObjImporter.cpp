@@ -196,6 +196,19 @@ namespace
 					return false;
 				}
 			}
+			else if (Keyword == "map_Bump" || Keyword == "bump" || Keyword == "norm" || Keyword == "map_kn")
+			{
+				FString MapKn;
+				if (!(Stream >> MapKn) || !TransformPath(Path, MapKn, MtlInfo.MapKn))
+				{
+					HTR_LOG(Warning, "[MTL] {}:{}: invalid map_Kn '{}'", Path, LineNumber, Line);
+					return false;
+				}
+			}
+			else
+			{
+				HTR_LOG(Warning, "[MTL] {}:{}: unknown keyword '{}'", Path, LineNumber, Keyword);
+			}
 		}
 		if (!MtlInfo.Name.empty())
 		{
@@ -405,6 +418,7 @@ bool FObjImporter::Cook(const FObjInfo& Raw, FStaticMeshData& Out)
 		CookedMtl.Name = RawMtl.Name;
 		CookedMtl.BaseColor = FLinearColor(RawMtl.Kd.X, RawMtl.Kd.Y, RawMtl.Kd.Z, RawMtl.D);
 		CookedMtl.DiffuseTexturePath = RawMtl.MapKd;
+		CookedMtl.NormalTexturePath = RawMtl.MapKn;
 		// Ns 0은 pow(x, 0) = 1이 되어 면 전체가 하이라이트로 덮인다.
 		CookedMtl.Shininess = std::max(RawMtl.Ns, 1.0f);
 		CookedMtl.SpecularColor = FLinearColor(RawMtl.Ks.X, RawMtl.Ks.Y, RawMtl.Ks.Z, 1.0f);
