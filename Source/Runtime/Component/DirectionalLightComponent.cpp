@@ -5,7 +5,7 @@
 FDirectionalLightInfo UDirectionalLightComponent::GetDirectionalLightInfo() const
 {
 	FDirectionalLightInfo Info;
-	Info.Color = GetLinearColorWithIntensity();
+	Info.Color = GetShaderColorWithIntensity();
 	Info.Direction = GetLightDirection();
 	return Info;
 }

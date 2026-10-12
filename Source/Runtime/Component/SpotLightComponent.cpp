@@ -14,7 +14,7 @@ void USpotLightComponent::PostEditChangeProperty(const FProperty& Property)
 FSpotLightInfo USpotLightComponent::GetSpotLightInfo() const
 {
 	FSpotLightInfo Info;
-	Info.Color = GetLinearColorWithIntensity();
+	Info.Color = GetShaderColorWithIntensity();
 	Info.AttenuationRadius = AttenuationRadius;
 	Info.Position = GetWorldLocation();
 	Info.CosInnerCone = std::cos(FMath::DegreesToRadians(InnerConeAngle));

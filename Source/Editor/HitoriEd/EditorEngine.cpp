@@ -23,6 +23,7 @@
 #include "Render/RenderResourceManager.h"
 
 #include "Render/RenderCommand.h"
+#include "Render/ColorWorkflow.h"
 #include "Editor/Outliner/OutlinerPanel.h"
 #include "Editor/HitoriEd/EditorFileUtils.h"
 #include "Editor/HitoriEd/EditorResourcePaths.h"
@@ -385,6 +386,8 @@ void UEditorEngine::TickWorldAndEditor(const float DeltaTime)
 		SCOPE_CYCLE_COUNTER(STAT_EditorTick);
 		EditorUI->Tick(DeltaTime);
 	}
+	// 라이트 프록시가 아래 UpdateAllTransforms에서 바뀐 작업 흐름으로 다시 계산되도록 먼저 반영한다.
+	ColorWorkflow::bLinear = SettingsPanel->GetSettings().bLinearWorkflow;
 	// 월드 캡처는 View마다 그릴 월드가 다르므로 RenderMultipleViewports에서 한다.
 	// PIE 중에도 PIE가 아닌 View에서는 EditorWorld 편집을 계속한다.
 	UpdateGizmoAndPicking();
@@ -551,7 +554,11 @@ FWorldContext* UEditorEngine::GetPIEWorldContext(int32 WorldPIEInstance)
 // 입력 View의 Ray와 피킹으로 Gizmo·공유 선택을 갱신한다.
 void UEditorEngine::RenderOpaquePass(const int32 ViewIndex, const FRenderingInfo& ViewRenderingInfo, const FMatrix& ViewProjection, const FVector& ViewCameraLocation, const FVector& ViewCameraForward, FRenderQueue& RenderQueue)
 {
-	RenderCommand::BeginRenderPass(ViewRenderingInfo);
+	// 배경은 화면에서 sRGB 0.3 회색으로 보여야 한다. Linear 작업 흐름에서는 인코딩될 것이므로 디코딩해 지운다.
+	FRenderingInfo PassInfo = ViewRenderingInfo;
+	const float ClearValue = ColorWorkflow::bLinear ? FLinearColor::SRGBToLinear(0.3f) : 0.3f;
+	PassInfo.ColorRenderTargets[0].ClearValue.ColorClearValue = FVector4(ClearValue, ClearValue, ClearValue, 1.0f);
+	RenderCommand::BeginRenderPass(PassInfo);
 
 	const bool bDrawPrimitives = SettingsPanel->GetSettings().bDrawPrimitives;
 	// 뷰 모드가 셰이더 permutation을, Wireframe 여부가 Fill Mode를 정한다. 삼각형 연결은 그대로다.
@@ -582,7 +589,7 @@ void UEditorEngine::RenderOpaquePass(const int32 ViewIndex, const FRenderingInfo
 	}
 
 
-	RenderCommand::EndRenderPass(ViewRenderingInfo);
+	RenderCommand::EndRenderPass(PassInfo);
 }
 
 void UEditorEngine::RenderFogPass(const int32 ViewIndex, UWorld& ViewWorld, const FRenderingInfo& ViewRenderingInfo, const FVector& ViewCameraLocation, const FMatrix& ViewProjection, FRenderQueue& RenderQueue)
@@ -873,7 +880,7 @@ void UEditorEngine::RenderFrame(const int32 ViewIndex, UWorld& ViewWorld, const 
 			RenderFogPass(ViewIndex, ViewWorld, SceneRenderingInfo, ViewCameraLocation, ViewProjection, RenderQueue);
 
 		// 3. Gamma Encode Pass: Linear 씬 컬러 → 표시용 sRGB
-		RenderGammaEncodePass(SceneRenderingInfo, ViewRenderingInfo, !bVisualizeData);
+		RenderGammaEncodePass(SceneRenderingInfo, ViewRenderingInfo, !bVisualizeData && ColorWorkflow::bLinear);
 
 		// 4. FXAA Pass: 밝기 계산이 감마 공간을 전제로 하므로 인코딩 뒤에 한다
 		if (!bVisualizeData && SettingsPanel->GetSettings().bEnableFXAA)

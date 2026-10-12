@@ -1,6 +1,7 @@
 ﻿#include "EnginePCH.h"
 #include "Scene.h"
 #include "LightSceneProxy.h"
+#include "Render/ColorWorkflow.h"
 
 void FScene::AddPrimitive(UPrimitiveComponent* Component)
 {
@@ -210,6 +211,13 @@ void FScene::UpdateAllTransforms()
 		PrimitiveBounds[Proxy->PackedIndex] = Proxy->GetBounds();
 		PrimitiveFlags[Proxy->PackedIndex] = Proxy->GetComponent()->IsVisible() ? 1 : 0;
 		Proxy->bQueuedForUpdate = false;
+	}
+
+	if (bLightColorsLinear != ColorWorkflow::bLinear)
+	{
+		bLightColorsLinear = ColorWorkflow::bLinear;
+		for (FLightSceneProxy* Proxy : Lights)
+			MarkLightDirty(Proxy);
 	}
 
 	for (FLightSceneProxy* Proxy : DirtyLights)
