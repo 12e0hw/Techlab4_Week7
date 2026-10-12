@@ -239,13 +239,6 @@ FPSInput mainVS(FVSInput Input)
     return Output;
 }
 
-float3 SRGBToLinear(float3 S)
-{
-    float3 Low = S / 12.92f;
-    float3 High = pow(max((S + 0.055f) / 1.055f, 0.0f), 2.4f);
-    return lerp(High, Low, step(S, 0.04045f));
-}
-
 float4 mainPS(FPSInput Input) : SV_TARGET
 {
     float4 FinalColor = float4(0.0f, 0.0f, 0.0f, 1.0f);
@@ -263,9 +256,8 @@ float4 mainPS(FPSInput Input) : SV_TARGET
 #if VIEWMODE == VIEWMODE_UNLIT
     FinalColor = float4(Albedo, Alpha);
 #elif VIEWMODE == VIEWMODE_WORLDNORMAL
-    // 뒤따르는 Gamma Encode Pass가 LinearToSRGB를 적용하므로, 미리 역변환해 화면에 N * 0.5 + 0.5가 그대로 나오게 한다.
-    float3 EncodedNormal = normalize(Input.Normal) * 0.5f + 0.5f;
-    FinalColor = float4(SRGBToLinear(EncodedNormal), 1.0f);
+    // 색이 아니라 데이터이므로 Gamma Encode Pass에서 인코딩하지 않는다.
+    FinalColor = float4(normalize(Input.Normal) * 0.5f + 0.5f, 1.0f);
 #else // Lit
     float3 DiffuseLight;
     float3 SpecularLight;

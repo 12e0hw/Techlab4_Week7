@@ -561,7 +561,8 @@ void UEditorEngine::RenderOpaquePass(const int32 ViewIndex, const FRenderingInfo
 
 	// 렌더 루프 — 반드시 RenderAll보다 먼저
 	// 직교는 시선이 모두 평행해 파노라마의 한 점만 확대되므로 하늘을 그리지 않고 지우기 색을 배경으로 쓴다.
-	if (!MultipleViewportsAdapter.IsOrthographic(ViewIndex))
+	// 데이터 시각화 뷰도 하늘은 데이터가 없으므로 그리지 않는다.
+	if (!MultipleViewportsAdapter.IsOrthographic(ViewIndex) && !IsDataVisualization(ViewRenderMode.ViewMode))
 		SkyboxRenderer->OnRender(ViewProjection, ViewCameraLocation);
 	if (bDrawPrimitives)
 	{
@@ -863,17 +864,19 @@ void UEditorEngine::RenderFrame(const int32 ViewIndex, UWorld& ViewWorld, const 
 	}
 	else
 	{
-		//직교인 경우 안개 Pass를 그리지 않는다. WorldNormal은 법선 값을 그대로 보여야 하므로 안개를 섞지 않는다.
-		const bool bWorldNormalView = MultipleViewportsAdapter.GetViewRenderMode(ViewIndex).ViewMode == EViewMode::WorldNormal;
-		if (!MultipleViewportsAdapter.IsOrthographic(ViewIndex) && !bWorldNormalView && SettingsPanel->GetSettings().bExponentialHeightFog)
+		// 데이터 시각화 뷰는 씬 컬러 값 자체가 결과이므로 안개·인코딩·FXAA로 값을 바꾸지 않는다.
+		const bool bVisualizeData = IsDataVisualization(MultipleViewportsAdapter.GetViewRenderMode(ViewIndex).ViewMode);
+
+		//직교인 경우 안개 Pass를 그리지 않는다.
+		if (!MultipleViewportsAdapter.IsOrthographic(ViewIndex) && !bVisualizeData && SettingsPanel->GetSettings().bExponentialHeightFog)
 			// 2. 안개 Pass (Linear 씬 컬러)
 			RenderFogPass(ViewIndex, ViewWorld, SceneRenderingInfo, ViewCameraLocation, ViewProjection, RenderQueue);
 
 		// 3. Gamma Encode Pass: Linear 씬 컬러 → 표시용 sRGB
-		RenderGammaEncodePass(SceneRenderingInfo, ViewRenderingInfo);
+		RenderGammaEncodePass(SceneRenderingInfo, ViewRenderingInfo, !bVisualizeData);
 
 		// 4. FXAA Pass: 밝기 계산이 감마 공간을 전제로 하므로 인코딩 뒤에 한다
-		if (SettingsPanel->GetSettings().bEnableFXAA)
+		if (!bVisualizeData && SettingsPanel->GetSettings().bEnableFXAA)
 			RenderFXAAPass(ViewIndex, ViewRenderingInfo);
 	}
 
@@ -881,7 +884,7 @@ void UEditorEngine::RenderFrame(const int32 ViewIndex, UWorld& ViewWorld, const 
 	RenderOverlayPass(ViewIndex, ViewWorld, ViewRenderingInfo, ViewProjection, ViewCameraLocation, ViewCameraForward, RenderQueue);
 }
 
-void UEditorEngine::RenderGammaEncodePass(const FRenderingInfo& SceneRenderingInfo, const FRenderingInfo& ViewRenderingInfo)
+void UEditorEngine::RenderGammaEncodePass(const FRenderingInfo& SceneRenderingInfo, const FRenderingInfo& ViewRenderingInfo, bool bEncode)
 {
 	FTexture2D* SceneColor = SceneRenderingInfo.ColorRenderTargets[0].Texture;
 	FTexture2D* ViewColor = ViewRenderingInfo.ColorRenderTargets[0].Texture;
@@ -899,7 +902,7 @@ void UEditorEngine::RenderGammaEncodePass(const FRenderingInfo& SceneRenderingIn
 	PassInfo.DepthStencil.Texture = nullptr;
 
 	RenderCommand::BeginRenderPass(PassInfo);
-	GammaEncodeRenderer->OnRender(SceneColor);
+	GammaEncodeRenderer->OnRender(SceneColor, bEncode);
 	RenderCommand::EndRenderPass(PassInfo);
 
 	// 다음 프레임에 SceneColor를 RTV로 쓸 때 SRV로 남아 있으면 D3D가 강제로 해제하므로 먼저 비운다

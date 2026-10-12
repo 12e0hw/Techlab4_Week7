@@ -2,6 +2,13 @@
 // 라이팅·블렌딩·안개는 모두 Linear에서 계산하고, 화면에 내보내기 직전에 한 번만 감마를 적용한다.
 Texture2D SceneColor : register(t0);
 
+cbuffer GammaEncodeConstants : register(b0)
+{
+    // 0이면 WorldNormal처럼 값 자체가 데이터인 뷰라서 변환 없이 그대로 옮긴다.
+    uint bEncode;
+    uint3 Padding;
+};
+
 struct PSInput
 {
     float4 Position : SV_POSITION;
@@ -30,7 +37,7 @@ float4 mainPS(PSInput Input) : SV_TARGET
     float3 Linear = SceneColor.Load(int3(Input.Position.xy, 0)).rgb;
 
     // HDR
-    float3 Encoded = LinearToSRGB(Linear);
+    float3 Encoded = bEncode ? LinearToSRGB(Linear) : Linear;
 
     // 뷰포트 텍스처를 ImGui가 알파 블렌딩으로 그리므로 최종 출력은 불투명으로 고정한다.
     return float4(Encoded, 1.0f);
