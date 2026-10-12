@@ -535,6 +535,15 @@ void FRenderer::UpdateMaterialParams(const FRenderPacket& RenderPacket)
 		}
 		break;
 	}
+	case EMaterialParamLayout::Billboard:
+	{
+		if (RenderPacket.Material->ParamBuffer && RenderPacket.MaterialParamData != nullptr)
+		{
+			RenderCommand::UpdateBufferData(RenderPacket.Material->ParamBuffer.get(), RenderPacket.MaterialParamData, RenderPacket.MaterialParamDataSize);
+			RenderCommand::BindConstantBuffer(1, RenderPacket.Material->ParamBuffer.get(), EShaderBindFlagBits::Pixel);
+		}
+		break;
+	}
 	case EMaterialParamLayout::None:
 	{
 		break;
