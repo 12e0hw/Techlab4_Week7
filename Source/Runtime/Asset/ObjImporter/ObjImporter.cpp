@@ -481,6 +481,11 @@ bool FObjImporter::Cook(const FObjInfo& Raw, FStaticMeshData& Out)
 		CookedSection.IndexCount = static_cast<uint32>(Cooked.Indices.Num()) - CookedSection.StartIndex;
 		Cooked.Sections.Add(std::move(CookedSection));
 	}
+	if (Raw.Normals.IsEmpty())
+	{
+		Cooked.CalculateNormals(Cooked.Vertices, Cooked.Indices);
+	}
+	Cooked.CalculateTangents(Cooked.Vertices, Cooked.Indices);
 
 	// AABB (변환이 끝난 Position 기준)
 	if (!Cooked.Vertices.IsEmpty())

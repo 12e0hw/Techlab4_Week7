@@ -213,3 +213,76 @@ void FStaticMeshData::BuildTriangleBVH()
 
 	TriangleBVH->Build(Elements);
 }
+
+void FStaticMeshData::CalculateNormals(TArray<FVertexPNCT>& Vertices, const TArray<uint32>& Indices)
+{
+	for (FVertexPNCT& Vertex : Vertices)
+	{
+		Vertex.Normal = FVector();
+	}
+	for (int32 i = 0; i < Indices.Num(); i += 3)
+	{
+		uint32 IndexA = Indices[i];
+		uint32 IndexB = Indices[i + 1];
+		uint32 IndexC = Indices[i + 2];
+
+		FVector A = Vertices[IndexA].Position;
+		FVector B = Vertices[IndexB].Position;
+		FVector C = Vertices[IndexC].Position;
+
+		FVector Edge1 = B - A;
+		FVector Edge2 = C - A;
+
+		FVector Normal = FVector::Cross(Edge1, Edge2);
+
+		Vertices[IndexA].Normal += Normal;
+		Vertices[IndexB].Normal += Normal;
+		Vertices[IndexC].Normal += Normal;
+	}
+
+	for (FVertexPNCT& Vertex : Vertices)
+	{
+		Vertex.Normal = Vertex.Normal.Normalized();
+	}
+}
+
+void FStaticMeshData::CalculateTangents(TArray<FVertexPNCT>& Vertices, const TArray<uint32>& Indices)
+{
+	for (FVertexPNCT& Vertex : Vertices)
+	{
+		Vertex.Tangent = FVector();
+	}
+	for (int32 i = 0; i < Indices.Num(); i += 3)
+	{
+		uint32 IndexA = Indices[i];
+		uint32 IndexB = Indices[i + 1];
+		uint32 IndexC = Indices[i + 2];
+
+		FVector A = Vertices[IndexA].Position;
+		FVector B = Vertices[IndexB].Position;
+		FVector C = Vertices[IndexC].Position;
+
+		FVector Edge1 = B - A;
+		FVector Edge2 = C - A;
+
+		FVector2 uvA = Vertices[IndexA].UV;
+		FVector2 uvB = Vertices[IndexB].UV;
+		FVector2 uvC = Vertices[IndexC].UV;
+
+		float DeltaU1 = uvB.X - uvA.X;
+		float DeltaV1 = uvB.Y - uvA.Y;
+		float DeltaU2 = uvC.X - uvA.X;
+		float DeltaV2 = uvC.Y - uvA.Y;
+
+		FVector FaceTangent = (Edge1 * DeltaV2 - Edge2 * DeltaV1) / (DeltaU1 * DeltaV2 - DeltaU2 * DeltaV1);
+
+		Vertices[IndexA].Tangent += FaceTangent;
+		Vertices[IndexB].Tangent += FaceTangent;
+		Vertices[IndexC].Tangent += FaceTangent;
+	}
+
+	for (FVertexPNCT& Vertex : Vertices)
+	{
+		Vertex.Tangent = Vertex.Tangent.Normalized();
+	}
+}

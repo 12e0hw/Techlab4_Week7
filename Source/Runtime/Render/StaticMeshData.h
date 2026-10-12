@@ -76,4 +76,7 @@ struct FStaticMeshData
 	void OptimizeTriangleOrderForVertexCache();
 
 	void BuildTriangleBVH();
+
+	void CalculateNormals(TArray<FVertexPNCT>& Vertices, const TArray<uint32>& Indices);
+	void CalculateTangents(TArray<FVertexPNCT>& Vertices, const TArray<uint32>& Indices);
 };

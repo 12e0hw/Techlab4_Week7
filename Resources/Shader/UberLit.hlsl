@@ -54,6 +54,7 @@ struct FVSInput
 {
     float3 Position : POSITION;
     float3 Normal : NORMAL;
+    float3 Tangent : TANGENT;
     float4 Color : COLOR; // 지금은 쓰지 않지만 나중에 쓰게 될 수 있음
     float2 UV : TEXCOORD;
 };
@@ -62,6 +63,7 @@ struct FPSInput
 {
     float4 Position : SV_POSITION;
     float3 Normal : NORMAL;
+    float3 Tangent : TANGENT;
     float2 UV : TEXCOORD0;
     float3 WorldPosition : TEXCOORD1;
 #if GOURAUD
@@ -105,6 +107,7 @@ cbuffer LightingConstants : register(b3)
 };
 
 Texture2D AlbedoTexture : register(t0);
+Texture2D NormalTexture : register(t1);
 
 SamplerState AlbedoSampler : register(s0);
 
@@ -212,9 +215,10 @@ FPSInput mainVS(FVSInput Input)
     float4 WorldPosition = mul(float4(Input.Position, 1.0f), World);
 
     Output.Position = mul(WorldPosition, ViewProjection);
-    Output.Normal = mul(float4(Input.Normal, 0.0f), NormalMatrix).xyz;
-    Output.UV = Input.UV;
     Output.WorldPosition = WorldPosition.xyz;
+    Output.Normal = mul(Input.Normal, (float3x3) NormalMatrix);
+    Output.Tangent = mul(Input.Tangent, (float3x3) NormalMatrix);
+    Output.UV = Input.UV;
 
 #if GOURAUD
     float3 N = normalize(Output.Normal);
@@ -238,6 +242,25 @@ float4 mainPS(FPSInput Input) : SV_TARGET
     float3 Kd = Albedo;
     float3 Ka = Kd; // 나중에 Ka 를 개별로 설정할 수 있음
     float3 Ks = SpecularColor;
+    
+    float3 Normal = normalize(Input.Normal);
+    // 그람 슈미트 직교화
+    float3 Tangent = normalize(Input.Tangent - dot(Input.Tangent, Normal) * Normal);
+    float3 BiTangent = cross(Normal, Tangent);
+    float3x3 TBN = float3x3(Tangent, BiTangent, Normal);
+    // Texture Normal 매핑
+    float3 TextureNormal;
+    if (NormalTexture)
+    {
+        float3 NormalSample = NormalTexture.Sample(AlbedoSampler, Input.UV + UVScrollOffset).xyz;
+        TextureNormal = normalize(NormalSample * 2.0f - 1.0f);
+    }
+    else
+    {
+        TextureNormal = float3(0.0f, 0.0f, 1.0f);
+    }
+    // TBN 행렬을 이용하여 월드 공간으로 변환
+    float3 WorldNormal = mul(TextureNormal, TBN);
 
 #if UNLIT               // Unlit
     FinalColor = float4(Albedo, Alpha);
@@ -248,12 +271,11 @@ float4 mainPS(FPSInput Input) : SV_TARGET
     DiffuseLight = Input.DiffuseLight;
     SpecularLight = Input.SpecularLight;
 #else                   // Phong
-    float3 N = normalize(Input.Normal);
+    float3 N = normalize(WorldNormal);
     float3 V = normalize(CameraPosition - Input.WorldPosition);
     ComputeLighting(N, Input.WorldPosition, V, Shininess, DiffuseLight, SpecularLight);
 #endif
     FinalColor = float4(Ka * AmbientLight.Color + Kd * DiffuseLight + Ks * SpecularLight, Alpha);
 #endif
-
     return FinalColor;
 }
