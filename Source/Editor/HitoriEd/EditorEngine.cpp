@@ -555,10 +555,17 @@ FWorldContext* UEditorEngine::GetPIEWorldContext(int32 WorldPIEInstance)
 void UEditorEngine::RenderOpaquePass(const int32 ViewIndex, const FRenderingInfo& ViewRenderingInfo, const FMatrix& ViewProjection, 
 	const FVector& ViewCameraLocation, const FVector& ViewCameraForward, FRenderQueue& RenderQueue)
 {
-	Renderer->EnsureTileLightCapacity(
-		ViewProjection,
-		ViewRenderingInfo.ViewportSetting.Width, 
-		ViewRenderingInfo.ViewportSetting.Height);
+
+	// 뷰 모드가 셰이더 permutation을, Wireframe 여부가 Fill Mode를 정한다. 삼각형 연결은 그대로다.
+	const FViewRenderMode ViewRenderMode = MultipleViewportsAdapter.GetViewRenderMode(ViewIndex);
+	const bool bVisualizeLightCount = SettingsPanel->GetSettings().bVisualizeTileLightCount;
+	if (ViewRenderMode.ViewMode == EViewMode::Lit)
+	{
+		Renderer->EnsureTileLightCapacity(
+			ViewProjection,
+			ViewRenderingInfo.ViewportSetting.Width,
+			ViewRenderingInfo.ViewportSetting.Height, bVisualizeLightCount);
+	}
 
 	// 배경은 화면에서 sRGB 0.3 회색으로 보여야 한다. Linear 작업 흐름에서는 인코딩될 것이므로 디코딩해 지운다.
 	FRenderingInfo PassInfo = ViewRenderingInfo;
@@ -567,8 +574,6 @@ void UEditorEngine::RenderOpaquePass(const int32 ViewIndex, const FRenderingInfo
 	RenderCommand::BeginRenderPass(PassInfo);
 
 	const bool bDrawPrimitives = SettingsPanel->GetSettings().bDrawPrimitives;
-	// 뷰 모드가 셰이더 permutation을, Wireframe 여부가 Fill Mode를 정한다. 삼각형 연결은 그대로다.
-	const FViewRenderMode ViewRenderMode = MultipleViewportsAdapter.GetViewRenderMode(ViewIndex);
 	const ERasterizerState SceneRasterizerState = ViewRenderMode.ViewMode == EViewMode::Wireframe
 		? ERasterizerState::Wireframe : ERasterizerState::SolidBack;
 

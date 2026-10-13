@@ -18,7 +18,21 @@ void FTileLightCulling::Init()
 	CullingConstantBuffer = RenderCommand::CreateConstantBuffer(sizeof(FTileLightCullingConstants));
 
 	FString CSOPath;
-	FShaderByteCode ByteCode = RenderUtil::GetOrCompile("Resources/Shader/TileLightCulling.hlsl", "mainCS", EShaderType::Compute, CSOPath);
+	//FShaderByteCode ByteCode = RenderUtil::GetOrCompile("Resources/Shader/TileLightCulling.hlsl", "mainCS", EShaderType::Compute, CSOPath);
+
+	//test
+	const D3D_SHADER_MACRO Defines[] =
+	{
+		{ "MAX_LIGHTS_PER_TILE", "64" },
+		{ nullptr, nullptr }
+	};
+	FShaderByteCode ByteCode = RenderUtil::GetOrCompile(
+		"Resources/Shader/TileLightCulling.hlsl",
+		"mainCS",
+		EShaderType::Compute,
+		CSOPath,
+		"_MaxLights64",
+		Defines);
 
 	if (!ByteCode.IsValid())
 	{
@@ -34,7 +48,7 @@ void FTileLightCulling::Init()
 	}
 }
 
-void FTileLightCulling::Dispatch(const FLocalLight& Lights, const FMatrix& ViewProjection, uint32 Width, uint32 Height)
+void FTileLightCulling::Dispatch(const FLocalLight& Lights, const FMatrix& ViewProjection, uint32 Width, uint32 Height, bool bVisualizeLightCount)
 {
 	if (!CullingConstantBuffer || !CullLightsCS || !PointTileListUAV || !SpotTileListUAV)
 		return;
@@ -52,6 +66,7 @@ void FTileLightCulling::Dispatch(const FLocalLight& Lights, const FMatrix& ViewP
 	Constants.NumSpotLights = Lights.GetNumSpotLights();
 	Constants.PointTileStride = PointTileStride;
 	Constants.SpotTileStride = SpotTileStride;
+	Constants.bVisualizeLightCount = bVisualizeLightCount ? 1u : 0u;
 	RenderCommand::UpdateBufferData(CullingConstantBuffer.get(), &Constants);
 	RenderCommand::BindConstantBuffer(0, CullingConstantBuffer.get(), EShaderBindFlagBits::Compute);
 

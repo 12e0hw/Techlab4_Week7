@@ -29,6 +29,8 @@ cbuffer TileLightCullingConstants : register(b0)
     uint NumSpotLights;
     uint PointTileStride;
     uint SpotTileStride;
+    uint bVisualizeLightCount;
+    uint3 TileCullingPadding;
 };
 
 StructuredBuffer<FPointLightInfo> PointLightBuffer : register(t0);
@@ -59,7 +61,9 @@ bool IntersectsSpotFrustum(FSpotLightInfo Light, float4 FrustumPlanes[6])
     float Height = Light.AttenuationRadius;
 
     if (Height <= 0.0f)
+    {
         return false;
+    }
 
     float3 Direction = normalize(Light.Direction);
 
@@ -75,7 +79,6 @@ bool IntersectsSpotFrustum(FSpotLightInfo Light, float4 FrustumPlanes[6])
     if (BaseRadius <= Height)
     {
         float CenterDistance = (Height * Height + BaseRadius * BaseRadius) / (2.0f * Height);
-
         SphereCenter = Light.Position + Direction * CenterDistance;
         SphereRadius = CenterDistance;
     }
@@ -104,12 +107,13 @@ bool IntersectsSpotFrustum(FSpotLightInfo Light, float4 FrustumPlanes[6])
         float4 Plane = FrustumPlanes[ConePlaneIndex];
 
         float ApexDistance = dot(Plane.xyz, Light.Position) + Plane.w;
+        
         float NormalAlongDirection = dot(Plane.xyz, Direction);
         float NormalPerpendicularLength = sqrt(saturate(1.0f - NormalAlongDirection * NormalAlongDirection));
 
         float BaseMaximumDistance = dot(Plane.xyz, BaseCenter) + Plane.w + BaseRadius * NormalPerpendicularLength;
+        
         float ConeMaximumDistance = max(ApexDistance, BaseMaximumDistance);
-
         if (ConeMaximumDistance < 0.0f)
         {
             return false;
@@ -120,7 +124,7 @@ bool IntersectsSpotFrustum(FSpotLightInfo Light, float4 FrustumPlanes[6])
 }
 
 
-[numthreads(64, 1, 1)]
+[numthreads(16, 4, 1)]
 void mainCS(uint3 GroupID : SV_GroupID, uint GroupIndex : SV_GroupIndex)
 {
     if (GroupID.x >= TileCountX || GroupID.y >= TileCountY)
@@ -268,7 +272,5 @@ void mainCS(uint3 GroupID : SV_GroupID, uint GroupIndex : SV_GroupIndex)
     {
         SpotTileListBuffer[SpotListStart + 1 + GroupIndex] = SpotVisibleIndices[GroupIndex];
     }
-    
-    
     
 }

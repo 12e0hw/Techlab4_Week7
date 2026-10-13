@@ -154,6 +154,8 @@ cbuffer TileLightConstants : register(b4)
     uint StructuredSpotLightCount;
     uint PointTileStride;
     uint SpotTileStride;
+    uint bVisualizeLightCount;
+    uint3 TileCullingPadding;
 };
 
 Texture2D AlbedoTexture : register(t0);
@@ -261,12 +263,27 @@ void ComputeLighting(float3 N, float3 GeoNormal, float3 WorldPosition, float3 V,
     }
 }
 
+float3 GetLightCountColor(uint LightCount)
+{
+    if (LightCount == 0u)
+        return float3(0.0f, 0.0f, 0.0f);
+    if (LightCount <= 4u)
+        return float3(0.0f, 0.0f, 1.0f);
+    if (LightCount <= 16u)
+        return float3(0.0f, 1.0f, 0.0f);
+    if (LightCount <= 32u)
+        return float3(1.0f, 1.0f, 0.0f);
+    if (LightCount <= 64u)
+        return float3(1.0f, 0.5f, 0.0f);
+    return float3(1.0f, 0.0f, 0.0f);
+}
+
 void ComputeTiledLighting(float3 N, float3 GeoNormal, float3 WorldPosition, float3 V, float n, float2 PixelPosition, out float3 DiffuseLight, out float3 SpecularLight)
 {
     DiffuseLight = 0.0f;
     SpecularLight = 0.0f;
 
-    // 화면 전체에 영향을 주는 Directional Light는 타일 목록에 넣지 않는다.
+    // 화면 전체에 영향을 주는 Directional Light는 타일 목록에 넣지 않음
     {
         float3 Il = DirectionalLight.Color;
         float3 L = -DirectionalLight.Direction;
@@ -277,6 +294,7 @@ void ComputeTiledLighting(float3 N, float3 GeoNormal, float3 WorldPosition, floa
     uint2 TileCoord = min(uint2(PixelPosition) / 16u, uint2(TileCountX - 1u, TileCountY - 1u));
     uint TileIndex = TileCoord.y * TileCountX + TileCoord.x;
 
+    // Point Light
     uint PointListStart = TileIndex * PointTileStride;
     uint PointCount = min(PointTileList[PointListStart], 64u);
     for (uint ListIndex = 0; ListIndex < PointCount; ++ListIndex)
@@ -302,6 +320,7 @@ void ComputeTiledLighting(float3 N, float3 GeoNormal, float3 WorldPosition, floa
         AccumulateLight(Il, N, L, V, n, DiffuseLight, SpecularLight);
     }
 
+    // Spot Light
     uint SpotListStart = TileIndex * SpotTileStride;
     uint SpotCount = min(SpotTileList[SpotListStart], 64u);
     for (uint SpotListIndex = 0; SpotListIndex < SpotCount; ++SpotListIndex)
@@ -378,6 +397,17 @@ float4 mainPS(FPSInput Input) : SV_TARGET
     float3 TextureNormal = normalize(NormalSample * 2.0f - 1.0f);
     // TBN 행렬을 이용하여 월드 공간으로 변환
     float3 WorldNormal = mul(TextureNormal, TBN);
+    
+    if (bVisualizeLightCount != 0u)
+    {
+        uint2 TileCoord = min(uint2(Input.Position.xy) / 16u, uint2(TileCountX - 1u, TileCountY - 1u));
+        uint TileIndex = TileCoord.y * TileCountX + TileCoord.x;
+        uint PointListStart = TileIndex * PointTileStride;
+        uint SpotListStart = TileIndex * SpotTileStride;
+        uint PointCount = min(PointTileList[PointListStart], 64u);
+        uint SpotCount = min(SpotTileList[SpotListStart], 64u);
+        return float4(GetLightCountColor(PointCount + SpotCount), 1.0f);
+    }
 
 #if VIEWMODE == VIEWMODE_UNLIT
     FinalColor = float4(Albedo, Alpha);

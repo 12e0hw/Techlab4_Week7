@@ -17,13 +17,15 @@ struct FTileLightCullingConstants
     uint32 NumSpotLights;
     uint32 PointTileStride;
     uint32 SpotTileStride;
+    uint32 bVisualizeLightCount;
+    uint32 Padding[3];
 };
 
 class FTileLightCulling
 {
 public:
     void Init();
-    void Dispatch(const FLocalLight& Lights, const FMatrix& ViewProjection, uint32 Width, uint32 Height);
+    void Dispatch(const FLocalLight& Lights, const FMatrix& ViewProjection, uint32 Width, uint32 Height, bool bVisualizeLightCount);
     void BindForShading(const FLocalLight& Lights);
     void UnbindForShading();
     

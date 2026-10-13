@@ -577,9 +577,9 @@ void FRenderer::UpdatePerObjectConstants(const FMatrix& World, const FMatrix& No
 	RenderCommand::UpdateBufferData(PerObjectCB.get(), &Constants);
 }
 
-void FRenderer::EnsureTileLightCapacity(const FMatrix& ViewProjection, uint32 Width, uint32 Height)
+void FRenderer::EnsureTileLightCapacity(const FMatrix& ViewProjection, uint32 Width, uint32 Height, bool bVisualizeLightCount)
 {
 	if (TileLightCulling.EnsureTileCapacity(Width, Height))
-		TileLightCulling.Dispatch(LocalLight, ViewProjection, Width, Height);
+		TileLightCulling.Dispatch(LocalLight, ViewProjection, Width, Height, bVisualizeLightCount);
 
 }

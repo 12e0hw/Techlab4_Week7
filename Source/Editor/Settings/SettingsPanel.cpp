@@ -46,6 +46,7 @@ void FSettingsPanel::OnRender()
 	ImGui::Checkbox("Object UUID", &Settings.bShowUUID);
 	ImGui::Checkbox("Grid", &Settings.bDrawGrid);
 	ImGui::Checkbox("Exponential Height Fog", &Settings.bExponentialHeightFog);
+	ImGui::Checkbox("Tile Light Count", &Settings.bVisualizeTileLightCount);
 
 	//////////////////////////////////////////////////////////
 
