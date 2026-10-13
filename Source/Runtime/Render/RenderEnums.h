@@ -4,4 +4,5 @@ enum class EShaderType
 {
 	Vertex,
 	Pixel,
+	Compute
 };
