@@ -18,6 +18,7 @@ struct FEditorSettings
 	bool bShowUUID = false;
 	bool bDrawGrid = true;
 	bool bExponentialHeightFog = true;
+	bool bVisualizeTileLightCount = false;
 
 	// Rendering
 	bool bEnableFXAA = true;

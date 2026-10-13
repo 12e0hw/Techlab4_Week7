@@ -128,6 +128,26 @@ cbuffer LightingConstants : register(b3)
     float2 LightingPadding;
 };
 
+cbuffer TileLightConstants : register(b4)
+{
+    matrix TileInverseViewProjection;
+    uint TileScreenWidth;
+    uint TileScreenHeight;
+    uint TileCountX;
+    uint TileCountY;
+    uint StructuredPointLightCount;
+    uint StructuredSpotLightCount;
+    uint PointTileStride;
+    uint SpotTileStride;
+    uint bVisualizeLightCount;
+    uint3 TileCullingPadding;
+};
+
+StructuredBuffer<FPointLightInfo> StructuredPointLights : register(t8);
+StructuredBuffer<FSpotLightInfo> StructuredSpotLights : register(t9);
+StructuredBuffer<uint> PointTileList : register(t10);
+StructuredBuffer<uint> SpotTileList : register(t11);
+
 Texture2D AlbedoTexture : register(t0);
 
 #if USE_NORMAL_MAP
@@ -169,11 +189,23 @@ void AccumulateLight(float3 Il, float3 N, float3 L, float3 V, float n, inout flo
     }
 }
 
-void ComputeLighting(float3 N, 
-#if USE_NORMAL_MAP
-    float3 GeoNormal, 
-#endif
-float3 WorldPosition, float3 V, float n, out float3 DiffuseLight, out float3 SpecularLight)
+float3 GetLightCountColor(uint LightCount)
+{
+    if (LightCount == 0u)
+        return float3(0.0f, 0.0f, 0.0f);
+    if (LightCount <= 4u)
+        return float3(0.0f, 0.0f, 1.0f);
+    if (LightCount <= 16u)
+        return float3(0.0f, 1.0f, 0.0f);
+    if (LightCount <= 32u)
+        return float3(1.0f, 1.0f, 0.0f);
+    if (LightCount <= 64u)
+        return float3(1.0f, 0.5f, 0.0f);
+    return float3(1.0f, 0.0f, 0.0f);
+}
+
+// 일단 GOURAUD 전용
+void ComputeLighting(float3 N, float3 WorldPosition, float3 V, float n, out float3 DiffuseLight, out float3 SpecularLight)
 {
     DiffuseLight = 0.0f;
     SpecularLight = 0.0f;
@@ -182,11 +214,7 @@ float3 WorldPosition, float3 V, float n, out float3 DiffuseLight, out float3 Spe
     {
         float3 Il = DirectionalLight.Color;
         float3 L = -DirectionalLight.Direction;
-#if USE_NORMAL_MAP
-        float GeoFactor = saturate(dot(GeoNormal, L) * 4.0f);
-#else
         float GeoFactor = 1.0f;
-#endif
         AccumulateLight(Il * GeoFactor, N, L, V, n, DiffuseLight, SpecularLight);
     }
 
@@ -202,13 +230,7 @@ float3 WorldPosition, float3 V, float n, out float3 DiffuseLight, out float3 Spe
                 continue;
 
             float3 L = ToLight / Distance;
-#if USE_NORMAL_MAP
-            float GeoFactor = saturate(dot(GeoNormal, L) * 4.0f);
-            if (GeoFactor <= 0.0f)
-                continue;
-#else
             float GeoFactor = 1.0f;
-#endif
 
             float DistanceAttenuation = ComputeDistanceAttenuation(Distance, Radius);
             float3 Il = Light.Color * DistanceAttenuation * GeoFactor;
@@ -227,13 +249,7 @@ float3 WorldPosition, float3 V, float n, out float3 DiffuseLight, out float3 Spe
             if (Distance >= Radius)
                 continue;
             float3 L = ToLight / Distance;
-#if USE_NORMAL_MAP
-            float GeoFactor = saturate(dot(GeoNormal, L) * 4.0f);
-            if (GeoFactor <= 0.0f)
-                continue;
-#else
             float GeoFactor = 1.0f;
-#endif
 
             float DistanceAttenuation = ComputeDistanceAttenuation(Distance, Radius);
             float CosAngle = dot(-L, Light.Direction);
@@ -244,6 +260,97 @@ float3 WorldPosition, float3 V, float n, out float3 DiffuseLight, out float3 Spe
             float3 Il = Light.Color * DistanceAttenuation * SpotAttenuation * GeoFactor;
             AccumulateLight(Il, N, L, V, n, DiffuseLight, SpecularLight);
         }
+    }
+}
+
+
+void ComputeTiledLighting(float3 N, 
+#if USE_NORMAL_MAP
+    float3 GeoNormal,
+#endif
+float3 WorldPosition, float3 V, float n, float2 PixelPosition, out float3 DiffuseLight, out float3 SpecularLight)
+{
+    DiffuseLight = 0.0f;
+    SpecularLight = 0.0f;
+
+    // 화면 전체에 영향을 주는 Directional Light는 타일 목록에 넣지 않음
+    {
+        float3 Il = DirectionalLight.Color;
+        float3 L = -DirectionalLight.Direction;
+#if USE_NORMAL_MAP
+        float GeoFactor = saturate(dot(GeoNormal, L) * 4.0f);
+#else
+        float GeoFactor = 1.0f;
+#endif
+        AccumulateLight(Il * GeoFactor, N, L, V, n, DiffuseLight, SpecularLight);
+    }
+
+    uint2 TileCoord = min(uint2(PixelPosition) / 16u, uint2(TileCountX - 1u, TileCountY - 1u));
+    uint TileIndex = TileCoord.y * TileCountX + TileCoord.x;
+
+    // Point Light
+    uint PointListStart = TileIndex * PointTileStride;
+    uint PointCount = min(PointTileList[PointListStart], 64u);
+    for (uint ListIndex = 0; ListIndex < PointCount; ++ListIndex)
+    {
+        uint LightIndex = PointTileList[PointListStart + 1u + ListIndex];
+        if (LightIndex >= StructuredPointLightCount)
+            continue;
+
+        FPointLightInfo Light = StructuredPointLights[LightIndex];
+        float3 ToLight = Light.Position - WorldPosition;
+        float Distance = length(ToLight);
+        float Radius = Light.AttenuationRadius;
+        if (Distance <= 0.0f || Distance >= Radius)
+            continue;
+
+        float3 L = ToLight / Distance;
+#if USE_NORMAL_MAP
+        float GeoFactor = saturate(dot(GeoNormal, L) * 4.0f);
+        if (GeoFactor <= 0.0f)
+            continue;
+#else
+            float GeoFactor = 1.0f;
+#endif
+
+        float DistanceAttenuation = ComputeDistanceAttenuation(Distance, Radius);
+        float3 Il = Light.Color * DistanceAttenuation * GeoFactor;
+        AccumulateLight(Il, N, L, V, n, DiffuseLight, SpecularLight);
+    }
+
+    // Spot Light
+    uint SpotListStart = TileIndex * SpotTileStride;
+    uint SpotCount = min(SpotTileList[SpotListStart], 64u);
+    for (uint SpotListIndex = 0; SpotListIndex < SpotCount; ++SpotListIndex)
+    {
+        uint LightIndex = SpotTileList[SpotListStart + 1u + SpotListIndex];
+        if (LightIndex >= StructuredSpotLightCount)
+            continue;
+
+        FSpotLightInfo Light = StructuredSpotLights[LightIndex];
+        float3 ToLight = Light.Position - WorldPosition;
+        float Distance = length(ToLight);
+        float Radius = Light.AttenuationRadius;
+        if (Distance <= 0.0f || Distance >= Radius)
+            continue;
+
+        float3 L = ToLight / Distance;
+#if USE_NORMAL_MAP
+        float GeoFactor = saturate(dot(GeoNormal, L) * 4.0f);
+        if (GeoFactor <= 0.0f)
+            continue;
+#else
+            float GeoFactor = 1.0f;
+#endif
+
+        float DistanceAttenuation = ComputeDistanceAttenuation(Distance, Radius);
+        float CosAngle = dot(-L, normalize(Light.Direction));
+        float SpotAttenuation = Light.CosInnerCone == Light.CosOuterCone
+            ? (CosAngle > Light.CosOuterCone ? 1.0f : 0.0f)
+            : saturate((CosAngle - Light.CosOuterCone) / (Light.CosInnerCone - Light.CosOuterCone));
+
+        float3 Il = Light.Color * DistanceAttenuation * SpotAttenuation * GeoFactor;
+        AccumulateLight(Il, N, L, V, n, DiffuseLight, SpecularLight);
     }
 }
 
@@ -264,9 +371,10 @@ FPSInput mainVS(FVSInput Input)
 #if GOURAUD
     float3 N = normalize(Output.Normal);
     float3 V = normalize(CameraPosition - Output.WorldPosition);
+    // TODO
     ComputeLighting(N, Output.WorldPosition, V, Shininess, Output.DiffuseLight, Output.SpecularLight);
+    
 #endif
-
     return Output;
 }
 
@@ -285,6 +393,7 @@ float4 mainPS(FPSInput Input) : SV_TARGET
     float3 Ks = SpecularColor;
     
     float3 Normal = normalize(Input.Normal);
+    
 #if USE_NORMAL_MAP
     // 그람 슈미트 직교화
     float3 Tangent = normalize(Input.Tangent - dot(Input.Tangent, Normal) * Normal);
@@ -298,13 +407,24 @@ float4 mainPS(FPSInput Input) : SV_TARGET
 # else
     float3 WorldNormal = Normal;
 #endif
-    
+   
 #if VIEWMODE == VIEWMODE_UNLIT
     FinalColor = float4(Albedo, Alpha);
 #elif VIEWMODE == VIEWMODE_WORLDNORMAL
     // 색이 아니라 데이터이므로 Gamma Encode Pass에서 인코딩하지 않는다.
     FinalColor = float4(normalize(WorldNormal) * 0.5f + 0.5f, 1.0f);
 #else // Lit
+    if (bVisualizeLightCount != 0u)
+    {
+        uint2 TileCoord = min(uint2(Input.Position.xy) / 16u, uint2(TileCountX - 1u, TileCountY - 1u));
+        uint TileIndex = TileCoord.y * TileCountX + TileCoord.x;
+        uint PointListStart = TileIndex * PointTileStride;
+        uint SpotListStart = TileIndex * SpotTileStride;
+        uint PointCount = min(PointTileList[PointListStart], 64u);
+        uint SpotCount = min(SpotTileList[SpotListStart], 64u);
+        return float4(GetLightCountColor(PointCount + SpotCount), 1.0f);
+    }
+    
     float3 DiffuseLight;
     float3 SpecularLight;
 #if SHADING_MODEL == SHADING_MODEL_GOURAUD
@@ -313,11 +433,13 @@ float4 mainPS(FPSInput Input) : SV_TARGET
 #else // Phong
     float3 N = normalize(WorldNormal);
     float3 V = normalize(CameraPosition - Input.WorldPosition);
+    
 #if USE_NORMAL_MAP
-    ComputeLighting(N, Normal, Input.WorldPosition, V, Shininess, DiffuseLight, SpecularLight);
+    ComputeTiledLighting(N, Normal, Input.WorldPosition, V, Shininess, Input.Position.xy, DiffuseLight, SpecularLight);
 #else
-    ComputeLighting(N, Input.WorldPosition, V, Shininess, DiffuseLight, SpecularLight);
+    ComputeTiledLighting(N, Input.WorldPosition, V, Shininess, Input.Position.xy, DiffuseLight, SpecularLight);
 #endif
+    
 #endif
     FinalColor = float4(Ka * AmbientLight.Color + Kd * DiffuseLight + Ks * SpecularLight, Alpha);
 #endif

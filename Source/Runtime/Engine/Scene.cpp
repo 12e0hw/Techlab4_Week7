@@ -287,3 +287,30 @@ void FScene::MarkRenderStateDirty(FPrimitiveSceneProxy* Proxy)
 	Proxy->bRenderStateQueued = true;
 	RenderStateDirtyProxies.Add(Proxy);
 }
+
+void FScene::BuildStructuredLight(TArray<FPointLightInfo>& OutPointLight, TArray<FSpotLightInfo>& OutSpotLight) const
+{
+	OutPointLight.Reset();
+	OutSpotLight.Reset();
+
+	for (FLightSceneProxy* Proxy : Lights)
+	{
+		if (!Proxy->IsVisible())
+		{
+			continue;
+		}
+
+		switch (Proxy->GetLightType())
+		{
+		case ELightType::Point:
+			OutPointLight.Add(static_cast<FPointLightSceneProxy*>(Proxy)->GetInfo());
+			break;
+		case ELightType::Spot:
+			OutSpotLight.Add(static_cast<FSpotLightSceneProxy*>(Proxy)->GetInfo());
+			break;
+		default:
+			break;
+		}
+	}
+
+}

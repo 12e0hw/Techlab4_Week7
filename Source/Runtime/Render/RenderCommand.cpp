@@ -146,6 +146,8 @@ void RenderCommand::BindConstantBuffer(uint32 Slot, FConstantBuffer* ConstantBuf
 		RenderDevice->GetContext()->VSSetConstantBuffers(Slot, 1, &Buffer);
 	if (HasFlag(FlagBits, EShaderBindFlagBits::Pixel))
 		RenderDevice->GetContext()->PSSetConstantBuffers(Slot, 1, &Buffer);
+	if (HasFlag(FlagBits, EShaderBindFlagBits::Compute))
+		RenderDevice->GetContext()->CSSetConstantBuffers(Slot, 1, &Buffer);
 
 }
 
@@ -162,6 +164,8 @@ void RenderCommand::BindConstantBufferRange(uint32 Slot, FConstantBuffer* Consta
 		Context->VSSetConstantBuffers1(Slot, 1, &Buffer, &FirstConstant, &NumConstants);
 	if (HasFlag(FlagBits, EShaderBindFlagBits::Pixel))
 		Context->PSSetConstantBuffers1(Slot, 1, &Buffer, &FirstConstant, &NumConstants);
+	if (HasFlag(FlagBits, EShaderBindFlagBits::Compute))
+		Context->CSSetConstantBuffers1(Slot, 1, &Buffer, &FirstConstant, &NumConstants);
 }
 
 void* RenderCommand::MapWriteDiscard(FBuffer* InBuffer)
@@ -194,6 +198,11 @@ void RenderCommand::BindShaderResource(uint32 Slot, FTexture2D* Texture2D, EShad
 	{
 		RenderDevice->GetContext()->PSSetShaderResources(Slot, 1, &SRV);
 	}
+
+	if (HasFlag(FlagBits, EShaderBindFlagBits::Compute))
+	{
+		RenderDevice->GetContext()->CSSetShaderResources(Slot, 1, &SRV);
+	}
 }
 
 void RenderCommand::BindShaderResource(uint32 Slot, UTexture2D* Texture2D, EShaderBindFlagBits FlagBits)
@@ -213,6 +222,11 @@ void RenderCommand::UnbindShaderResource(uint32 Slot, EShaderBindFlagBits FlagBi
 	if (HasFlag(FlagBits, EShaderBindFlagBits::Pixel))
 	{
 		RenderDevice->GetContext()->PSSetShaderResources(Slot, 1, &NullSRV);
+	}
+
+	if (HasFlag(FlagBits, EShaderBindFlagBits::Compute))
+	{
+		RenderDevice->GetContext()->CSSetShaderResources(Slot, 1, &NullSRV);
 	}
 }
 

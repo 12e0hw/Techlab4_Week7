@@ -70,8 +70,10 @@ bool FRenderer::Init()
 	PerObjectCB = RenderCommand::CreateConstantBuffer(sizeof(FPerObjectConstants));
 	ViewCB = RenderCommand::CreateConstantBuffer(sizeof(FViewConstants));
 	LightingCB = RenderCommand::CreateConstantBuffer(sizeof(FLightingConstants));
-	SetLighting(FLightingConstants{});
+	FLightingConstants LightingConstant{};
+	RenderCommand::UpdateBufferData(LightingCB.get(), &LightingConstant);
 
+	TileLightCulling.Init();
 	GPUOcclusion.Init();   // 실패해도 오클루전만 못 쓸 뿐 렌더링은 된다
 
 	return true;
@@ -471,9 +473,14 @@ void FRenderer::SetViewMode(const FViewRenderMode& Mode)
 	ViewModeNormalShader = FRenderResourceManager::GetUberLitProgram(Mode, true);
 }
 
-void FRenderer::SetLighting(const FLightingConstants& Lighting)
+void FRenderer::SetLighting(const FLightingConstants& GlobalLights,
+	const TArray<FPointLightInfo>& PointLights, const TArray<FSpotLightInfo>& SpotLights)
 {
-	RenderCommand::UpdateBufferData(LightingCB.get(), &Lighting);
+	// 이전 View의 PS SRV 바인딩을 끊은 뒤 동적 LocalLight 버퍼를 다시 쓴다.
+	TileLightCulling.UnbindForShading();
+	RenderCommand::UpdateBufferData(LightingCB.get(), &GlobalLights);
+	LocalLight.UploadLights(PointLights, SpotLights);
+
 }
 
 // Material마다 Shader/Texture/Sampler/State 꽂기
@@ -578,4 +585,11 @@ void FRenderer::UpdatePerObjectConstants(const FMatrix& World, const FMatrix& No
 	Constants.NormalMatrix = NormalMatrix;
 
 	RenderCommand::UpdateBufferData(PerObjectCB.get(), &Constants);
+}
+
+void FRenderer::EnsureTileLightCapacity(const FMatrix& ViewProjection, uint32 Width, uint32 Height, bool bVisualizeLightCount)
+{
+	if (TileLightCulling.EnsureTileCapacity(Width, Height))
+		TileLightCulling.Dispatch(LocalLight, ViewProjection, Width, Height, bVisualizeLightCount);
+
 }
