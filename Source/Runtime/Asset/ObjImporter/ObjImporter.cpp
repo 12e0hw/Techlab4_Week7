@@ -196,6 +196,19 @@ namespace
 					return false;
 				}
 			}
+			else if (Keyword == "map_Bump" || Keyword == "bump" || Keyword == "norm" || Keyword == "map_kn")
+			{
+				FString MapKn;
+				if (!(Stream >> MapKn) || !TransformPath(Path, MapKn, MtlInfo.MapKn))
+				{
+					HTR_LOG(Warning, "[MTL] {}:{}: invalid map_Kn '{}'", Path, LineNumber, Line);
+					return false;
+				}
+			}
+			else
+			{
+				HTR_LOG(Warning, "[MTL] {}:{}: unknown keyword '{}'", Path, LineNumber, Keyword);
+			}
 		}
 		if (!MtlInfo.Name.empty())
 		{
@@ -405,6 +418,7 @@ bool FObjImporter::Cook(const FObjInfo& Raw, FStaticMeshData& Out)
 		CookedMtl.Name = RawMtl.Name;
 		CookedMtl.BaseColor = FLinearColor(RawMtl.Kd.X, RawMtl.Kd.Y, RawMtl.Kd.Z, RawMtl.D);
 		CookedMtl.DiffuseTexturePath = RawMtl.MapKd;
+		CookedMtl.NormalTexturePath = RawMtl.MapKn;
 		// Ns 0은 pow(x, 0) = 1이 되어 면 전체가 하이라이트로 덮인다.
 		CookedMtl.Shininess = std::max(RawMtl.Ns, 1.0f);
 		CookedMtl.SpecularColor = FLinearColor(RawMtl.Ks.X, RawMtl.Ks.Y, RawMtl.Ks.Z, 1.0f);
@@ -481,6 +495,12 @@ bool FObjImporter::Cook(const FObjInfo& Raw, FStaticMeshData& Out)
 		CookedSection.IndexCount = static_cast<uint32>(Cooked.Indices.Num()) - CookedSection.StartIndex;
 		Cooked.Sections.Add(std::move(CookedSection));
 	}
+	// TODO:: 실행 안됨 나중에 하드 엣지와 소프트 엣지를 구분해서 노말을 채워야 함 지금은 면벡터 사용
+	/*if (Raw.Normals.IsEmpty())
+	{
+		Cooked.CalculateNormals(Cooked.Vertices, Cooked.Indices);
+	}*/
+	Cooked.CalculateTangents(Cooked.Vertices, Cooked.Indices);
 
 	// AABB (변환이 끝난 Position 기준)
 	if (!Cooked.Vertices.IsEmpty())

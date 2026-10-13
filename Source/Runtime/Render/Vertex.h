@@ -27,6 +27,7 @@ struct FVertexPNCT
 {
 	FVector Position = FVector();
 	FVector Normal = FVector();
+	FVector Tangent = FVector();
 	FVector4 Color = FVector4();
 	FVector2 UV = FVector2();
 };

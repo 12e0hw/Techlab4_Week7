@@ -10,6 +10,7 @@
 
 #include "RenderCommand.h"
 #include "RenderResourceManager.h"
+#include "ColorWorkflow.h"
 
 #include "Camera/CameraComponent.h"
 
@@ -517,11 +518,11 @@ void FRenderer::UpdateMaterialParams(const FRenderPacket& RenderPacket)
 		const float TotalTime = EngineTimer::GetTotalTime();
 
 		FStaticMeshMaterialParams Params{};
-		Params.BaseColor = RenderPacket.Material->BaseColor;
+		Params.BaseColor = ColorWorkflow::ToShaderColor(RenderPacket.Material->BaseColor);
 		Params.UVScrollOffset = RenderPacket.Material->UVScrollSpeed * TotalTime;
 		Params.bOpaque = RenderPacket.Material->BlendState == EBlendState::Opaque ? 1u : 0u;
 		Params.Shininess = RenderPacket.Material->Shininess;
-		const FLinearColor& Specular = RenderPacket.Material->SpecularColor;
+		const FLinearColor Specular = ColorWorkflow::ToShaderColor(RenderPacket.Material->SpecularColor);
 		Params.SpecularColor = FVector(Specular.R, Specular.G, Specular.B);
 
 		RenderCommand::UpdateBufferData(RenderPacket.Material->ParamBuffer.get(), &Params, sizeof(FStaticMeshMaterialParams));

@@ -8,7 +8,7 @@
 #include "Render/StaticMeshData.h"
 #include "Core/EngineLog.h"
 
-static_assert(sizeof(FVertexPNCT) == 48);
+static_assert(sizeof(FVertexPNCT) == 60);
 
 // 바이트 그대로 읽고 쓰는 타입. 복사 생성자를 직접 작성하면 여기서 컴파일 오류가 난다
 static_assert(std::is_trivially_copyable_v<FVertexPNCT>);
@@ -21,7 +21,7 @@ static_assert(std::is_trivially_copyable_v<FLODSourceVertex>);
 namespace
 {
 	// FStaticMeshData, FVertexPNCT, FStaticMeshSection, FStaticMaterialSlot 구조가 바뀌면 올린다
-	constexpr uint32 BakeVersion = 5;
+	constexpr uint32 BakeVersion = 6;
 
 	struct FBakeHeader
 	{
@@ -138,6 +138,7 @@ TUniquePtr<FStaticMeshData> FStaticMeshBake::ReadBaked(const FString& BinPath)
 		if (!ReadString(In, Slot.Name) ||
 			!ReadPod<FLinearColor>(In, Slot.BaseColor) ||
 			!ReadString(In, Slot.DiffuseTexturePath) ||
+			!ReadString(In, Slot.NormalTexturePath) ||
 			!ReadPod<float>(In, Slot.Shininess) ||
 			!ReadPod<FLinearColor>(In, Slot.SpecularColor))
 		{
@@ -186,6 +187,7 @@ void FStaticMeshBake::WriteBaked(const FString& BinPath, const FStaticMeshData& 
 		WriteString(Out, Slot.Name);
 		WritePod<FLinearColor>(Out, Slot.BaseColor);
 		WriteString(Out, Slot.DiffuseTexturePath);
+		WriteString(Out, Slot.NormalTexturePath);
 		WritePod<float>(Out, Slot.Shininess);
 		WritePod<FLinearColor>(Out, Slot.SpecularColor);
 	}

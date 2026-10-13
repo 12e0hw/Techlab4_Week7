@@ -90,6 +90,15 @@ namespace
 					Material->Textures[0] = Texture;
 				}
 			}
+			if (!Slot.NormalTexturePath.empty())
+			{
+				// 노멀맵은 색이 아니라 방향 데이터라 sRGB 디코딩을 하면 벡터가 틀어진다
+				UTexture2D* Texture = UAssetManager::Get().LoadTexture(Slot.NormalTexturePath, true, false);
+				if (Texture)
+				{
+					Material->Textures[1] = Texture;
+				}
+			}
 			Mesh->Materials.Add(Material);
 		}
 
@@ -208,6 +217,32 @@ void UAssetManager::CreateDefaultTextures()
 	WhiteTexture->SetPath("WhiteTexture");
 
 	AssetMap["WhiteTexture"] = WhiteTexture;
+
+	// 노멀맵이 지정되지 않은 머티리얼을 위한 1x1 평면 노멀맵 텍스처.
+	// uint32 리터럴로 쓰면 리틀 엔디안 때문에 RGBA 순서가 뒤집히므로 바이트 순서대로 적는다
+	const uint8 FlatNormalPixel[4] = { 128, 128, 255, 255 }; // RGBA => (0.5, 0.5, 1.0)
+
+	D3D11_TEXTURE2D_DESC NormalDesc{};
+	NormalDesc.Width = 1;
+	NormalDesc.Height = 1;
+	NormalDesc.MipLevels = 1;
+	NormalDesc.ArraySize = 1;
+	NormalDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
+	NormalDesc.SampleDesc.Count = 1;
+	NormalDesc.Usage = D3D11_USAGE_IMMUTABLE;
+	NormalDesc.BindFlags = D3D11_BIND_SHADER_RESOURCE;
+
+	TUniquePtr<FTexture2D> NormalResource = RenderCommand::CreateTexture2D(NormalDesc, FlatNormalPixel);
+	if (!NormalResource)
+	{
+		return;
+	}
+
+	UTexture2D* FlatNormalTexture = NewObject<UTexture2D>();
+	FlatNormalTexture->SetResource(std::move(NormalResource));
+	FlatNormalTexture->SetPath("FlatNormalTexture");
+
+	AssetMap["FlatNormalTexture"] = FlatNormalTexture;
 }
 
 void UAssetManager::CreateDefaultMeshes()
@@ -286,7 +321,7 @@ void UAssetManager::CreateDefaultMaterial()
 	UMaterial* DefaultMat = NewObject<UMaterial>();
 	DefaultMat->Shader = FRenderResourceManager::GetUberLitProgram(FViewRenderMode{});
 	DefaultMat->Textures.Add(GetAssetByPath<UTexture2D>("WhiteTexture"));
-
+	DefaultMat->Textures.Add(GetAssetByPath<UTexture2D>("FlatNormalTexture"));
 
 	DefaultMat->ParamLayout = EMaterialParamLayout::StaticMesh;
 	DefaultMat->ParamBuffer = RenderCommand::CreateConstantBuffer(sizeof(FStaticMeshMaterialParams));

@@ -23,6 +23,7 @@
 #include "Render/RenderResourceManager.h"
 
 #include "Render/RenderCommand.h"
+#include "Render/ColorWorkflow.h"
 #include "Editor/Outliner/OutlinerPanel.h"
 #include "Editor/HitoriEd/EditorFileUtils.h"
 #include "Editor/HitoriEd/EditorResourcePaths.h"
@@ -385,6 +386,8 @@ void UEditorEngine::TickWorldAndEditor(const float DeltaTime)
 		SCOPE_CYCLE_COUNTER(STAT_EditorTick);
 		EditorUI->Tick(DeltaTime);
 	}
+	// 라이트 프록시가 아래 UpdateAllTransforms에서 바뀐 작업 흐름으로 다시 계산되도록 먼저 반영한다.
+	ColorWorkflow::bLinear = SettingsPanel->GetSettings().bLinearWorkflow;
 	// 월드 캡처는 View마다 그릴 월드가 다르므로 RenderMultipleViewports에서 한다.
 	// PIE 중에도 PIE가 아닌 View에서는 EditorWorld 편집을 계속한다.
 	UpdateGizmoAndPicking();
@@ -552,7 +555,12 @@ FWorldContext* UEditorEngine::GetPIEWorldContext(int32 WorldPIEInstance)
 void UEditorEngine::RenderOpaquePass(const int32 ViewIndex, const FRenderingInfo& ViewRenderingInfo, const FMatrix& ViewProjection, const FVector& ViewCameraLocation, const FVector& ViewCameraForward, FRenderQueue& RenderQueue)
 {
 	Renderer->EnsureTileLightCapacity(ViewRenderingInfo.ViewportSetting.Width, ViewRenderingInfo.ViewportSetting.Height);
-	RenderCommand::BeginRenderPass(ViewRenderingInfo);
+
+	// 배경은 화면에서 sRGB 0.3 회색으로 보여야 한다. Linear 작업 흐름에서는 인코딩될 것이므로 디코딩해 지운다.
+	FRenderingInfo PassInfo = ViewRenderingInfo;
+	const float ClearValue = ColorWorkflow::bLinear ? FLinearColor::SRGBToLinear(0.3f) : 0.3f;
+	PassInfo.ColorRenderTargets[0].ClearValue.ColorClearValue = FVector4(ClearValue, ClearValue, ClearValue, 1.0f);
+	RenderCommand::BeginRenderPass(PassInfo);
 
 	const bool bDrawPrimitives = SettingsPanel->GetSettings().bDrawPrimitives;
 	// 뷰 모드가 셰이더 permutation을, Wireframe 여부가 Fill Mode를 정한다. 삼각형 연결은 그대로다.
@@ -562,7 +570,8 @@ void UEditorEngine::RenderOpaquePass(const int32 ViewIndex, const FRenderingInfo
 
 	// 렌더 루프 — 반드시 RenderAll보다 먼저
 	// 직교는 시선이 모두 평행해 파노라마의 한 점만 확대되므로 하늘을 그리지 않고 지우기 색을 배경으로 쓴다.
-	if (!MultipleViewportsAdapter.IsOrthographic(ViewIndex))
+	// 데이터 시각화 뷰도 하늘은 데이터가 없으므로 그리지 않는다.
+	if (!MultipleViewportsAdapter.IsOrthographic(ViewIndex) && !IsDataVisualization(ViewRenderMode.ViewMode))
 		SkyboxRenderer->OnRender(ViewProjection, ViewCameraLocation);
 	if (bDrawPrimitives)
 	{
@@ -582,7 +591,7 @@ void UEditorEngine::RenderOpaquePass(const int32 ViewIndex, const FRenderingInfo
 	}
 
 
-	RenderCommand::EndRenderPass(ViewRenderingInfo);
+	RenderCommand::EndRenderPass(PassInfo);
 }
 
 void UEditorEngine::RenderFogPass(const int32 ViewIndex, UWorld& ViewWorld, const FRenderingInfo& ViewRenderingInfo, const FVector& ViewCameraLocation, const FMatrix& ViewProjection, FRenderQueue& RenderQueue)
@@ -878,16 +887,19 @@ void UEditorEngine::RenderFrame(const int32 ViewIndex, UWorld& ViewWorld,
 	}
 	else
 	{
+		// 데이터 시각화 뷰는 씬 컬러 값 자체가 결과이므로 안개·인코딩·FXAA로 값을 바꾸지 않는다.
+		const bool bVisualizeData = IsDataVisualization(MultipleViewportsAdapter.GetViewRenderMode(ViewIndex).ViewMode);
+
 		//직교인 경우 안개 Pass를 그리지 않는다.
-		if (!MultipleViewportsAdapter.IsOrthographic(ViewIndex) && SettingsPanel->GetSettings().bExponentialHeightFog)
+		if (!MultipleViewportsAdapter.IsOrthographic(ViewIndex) && !bVisualizeData && SettingsPanel->GetSettings().bExponentialHeightFog)
 			// 2. 안개 Pass (Linear 씬 컬러)
 			RenderFogPass(ViewIndex, ViewWorld, SceneRenderingInfo, ViewCameraLocation, ViewProjection, RenderQueue);
 
 		// 3. Gamma Encode Pass: Linear 씬 컬러 → 표시용 sRGB
-		RenderGammaEncodePass(SceneRenderingInfo, ViewRenderingInfo);
+		RenderGammaEncodePass(SceneRenderingInfo, ViewRenderingInfo, !bVisualizeData && ColorWorkflow::bLinear);
 
 		// 4. FXAA Pass: 밝기 계산이 감마 공간을 전제로 하므로 인코딩 뒤에 한다
-		if (SettingsPanel->GetSettings().bEnableFXAA)
+		if (!bVisualizeData && SettingsPanel->GetSettings().bEnableFXAA)
 			RenderFXAAPass(ViewIndex, ViewRenderingInfo);
 	}
 
@@ -895,7 +907,7 @@ void UEditorEngine::RenderFrame(const int32 ViewIndex, UWorld& ViewWorld,
 	RenderOverlayPass(ViewIndex, ViewWorld, ViewRenderingInfo, ViewProjection, ViewCameraLocation, ViewCameraForward, RenderQueue);
 }
 
-void UEditorEngine::RenderGammaEncodePass(const FRenderingInfo& SceneRenderingInfo, const FRenderingInfo& ViewRenderingInfo)
+void UEditorEngine::RenderGammaEncodePass(const FRenderingInfo& SceneRenderingInfo, const FRenderingInfo& ViewRenderingInfo, bool bEncode)
 {
 	FTexture2D* SceneColor = SceneRenderingInfo.ColorRenderTargets[0].Texture;
 	FTexture2D* ViewColor = ViewRenderingInfo.ColorRenderTargets[0].Texture;
@@ -913,7 +925,7 @@ void UEditorEngine::RenderGammaEncodePass(const FRenderingInfo& SceneRenderingIn
 	PassInfo.DepthStencil.Texture = nullptr;
 
 	RenderCommand::BeginRenderPass(PassInfo);
-	GammaEncodeRenderer->OnRender(SceneColor);
+	GammaEncodeRenderer->OnRender(SceneColor, bEncode);
 	RenderCommand::EndRenderPass(PassInfo);
 
 	// 다음 프레임에 SceneColor를 RTV로 쓸 때 SRV로 남아 있으면 D3D가 강제로 해제하므로 먼저 비운다

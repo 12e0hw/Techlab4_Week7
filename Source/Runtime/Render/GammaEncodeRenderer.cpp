@@ -14,6 +14,8 @@ bool FGammaEncodeRenderer::Init()
 		return false;
 	}
 
+	ConstantBuffer = RenderCommand::CreateConstantBuffer(sizeof(FGammaEncodeConstants));
+
 	PipelineState.Shader = Shader;
 	PipelineState.Topology = D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
 	// 출력 타깃 전체를 덮어쓰는 후처리라 블렌딩·깊이 테스트가 필요 없다
@@ -23,12 +25,18 @@ bool FGammaEncodeRenderer::Init()
 	return true;
 }
 
-void FGammaEncodeRenderer::OnRender(FTexture2D* SceneColor)
+void FGammaEncodeRenderer::OnRender(FTexture2D* SceneColor, bool bEncode)
 {
 	if (!Shader || !SceneColor)
 		return;
 
 	RenderCommand::BindPipelineState(PipelineState);
 	RenderCommand::BindShaderResource(0, SceneColor, EShaderBindFlagBits::Pixel);
+
+	FGammaEncodeConstants Constants{};
+	Constants.bEncode = bEncode ? 1u : 0u;
+	RenderCommand::UpdateBufferData(ConstantBuffer.get(), &Constants);
+	RenderCommand::BindConstantBuffer(0, ConstantBuffer.get(), EShaderBindFlagBits::Pixel);
+
 	RenderCommand::Draw(3);
 }

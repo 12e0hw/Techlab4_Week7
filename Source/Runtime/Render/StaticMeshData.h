@@ -19,6 +19,7 @@ struct FStaticMaterialSlot
 	// MTL의 Kd(Linear) + d(불투명도)
 	FLinearColor BaseColor = FLinearColor(1.0f, 1.0f, 1.0f, 1.0f);
 	FString DiffuseTexturePath;
+	FString NormalTexturePath;
 	float Shininess = 32.0f;	// MTL의 Ns
 	FLinearColor SpecularColor = FLinearColor(0.5f, 0.5f, 0.5f, 1.0f);	// MTL의 Ks(Linear)
 };
@@ -76,4 +77,7 @@ struct FStaticMeshData
 	void OptimizeTriangleOrderForVertexCache();
 
 	void BuildTriangleBVH();
+
+	void CalculateNormals(TArray<FVertexPNCT>& Vertices, const TArray<uint32>& Indices);
+	void CalculateTangents(TArray<FVertexPNCT>& Vertices, const TArray<uint32>& Indices);
 };

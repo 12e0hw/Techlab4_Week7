@@ -55,6 +55,8 @@ void FSettingsPanel::OnRender()
 	ImGui::TextDisabled("Fill mode is configured per viewport.");
 	ImGui::Checkbox("FXAA", &Settings.bEnableFXAA);
 	ImGui::Checkbox("Depth View", &Settings.bDepthView);
+	ImGui::Checkbox("Linear Workflow", &Settings.bLinearWorkflow);
+	ImGui::SetItemTooltip("Off: no sRGB decode/encode (gamma-space rendering), for comparison.");
 
 	//////////////////////////////////////////////////////////
 
@@ -128,6 +130,7 @@ bool FSettingsPanel::SaveSettings() const
 	File << "[Rendering]\n";
 	File << "EnableFXAA=" << Settings.bEnableFXAA << "\n";
 	File << "DepthView=" << Settings.bDepthView << "\n";
+	File << "LinearWorkflow=" << Settings.bLinearWorkflow << "\n";
 	File << "\n";
 
 	File << "[Grid]\n";
@@ -267,6 +270,7 @@ bool FSettingsPanel::LoadSettings()
 
 				else if (Key == "EnableFXAA") Settings.bEnableFXAA = std::stoi(ValueStr);
 				else if (Key == "DepthView") Settings.bDepthView = std::stoi(ValueStr);
+				else if (Key == "LinearWorkflow") Settings.bLinearWorkflow = std::stoi(ValueStr);
 
 				else if (Key == "GridSpacing") Settings.GridSpacing = std::stoi(ValueStr);
 

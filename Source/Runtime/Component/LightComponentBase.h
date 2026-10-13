@@ -3,6 +3,7 @@
 #include "SceneComponent.h"
 #include "Math/Color.h"
 #include "Render/LightInfo.h"
+#include "Render/ColorWorkflow.h"
 
 class FLightSceneProxy;
 
@@ -28,10 +29,11 @@ public:
 	bool IsLightVisible() const { return bVisible; }
 	void SetLightVisible(bool bInVisible) { bVisible = bInVisible; }
 
-	FVector GetLinearColorWithIntensity() const
+	// 감마 모드에서는 sRGB 색을 디코딩하지 않은 채 Intensity를 곱한다.
+	FVector GetShaderColorWithIntensity() const
 	{
-		const FLinearColor Linear = FLinearColor(LightColor) * Intensity;
-		return FVector(Linear.R, Linear.G, Linear.B);
+		const FLinearColor Color = (ColorWorkflow::bLinear ? FLinearColor(LightColor) : LightColor.ReinterpretAsLinear()) * Intensity;
+		return FVector(Color.R, Color.G, Color.B);
 	}
 
 	virtual FLightSceneProxy* CreateSceneProxy() { return nullptr; }

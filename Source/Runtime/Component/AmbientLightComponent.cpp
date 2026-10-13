@@ -5,7 +5,7 @@
 FAmbientLightInfo UAmbientLightComponent::GetAmbientLightInfo() const
 {
 	FAmbientLightInfo Info;
-	Info.Color = GetLinearColorWithIntensity();
+	Info.Color = GetShaderColorWithIntensity();
 	return Info;
 }
 
