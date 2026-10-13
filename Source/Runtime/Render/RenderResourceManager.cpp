@@ -91,7 +91,7 @@ namespace
 	const char* const Digits[] = { "0", "1", "2", "3"};
 }
 
-FString FRenderResourceManager::GetUberLitSuffix(const FViewRenderMode& Mode)
+FString FRenderResourceManager::GetUberLitSuffix(const FViewRenderMode& Mode, bool bHasNormalMap )
 {
 	switch (Mode.ViewMode)
 	{
@@ -99,18 +99,21 @@ FString FRenderResourceManager::GetUberLitSuffix(const FViewRenderMode& Mode)
 	case EViewMode::Wireframe:
 		return "_UNLIT";
 	case EViewMode::WorldNormal:
-		return "_WORLDNORMAL";
+		return FString("_WORLDNORMAL")+ "_NM" + Digits[static_cast<int32>(bHasNormalMap)];	
 	default:
 		break;
 	}
 
+	const bool bUseNormalMap = (Mode.ShadingModel == EShadingModel::Phong && bHasNormalMap);
+
 	return FString("_LM") + Digits[static_cast<int32>(Mode.LightingModel)]
-		+ "_SM" + Digits[static_cast<int32>(Mode.ShadingModel)];
+		+ "_SM" + Digits[static_cast<int32>(Mode.ShadingModel)] 
+		+ "_NM" + Digits[static_cast<int32>(bUseNormalMap)];
 }
 
-FShaderProgram* FRenderResourceManager::GetUberLitProgram(const FViewRenderMode& Mode)
+FShaderProgram* FRenderResourceManager::GetUberLitProgram(const FViewRenderMode& Mode, bool bHasNormalMap	)
 {
-	return GetShaderProgram(UberLitPath + GetUberLitSuffix(Mode));
+	return GetShaderProgram(UberLitPath + GetUberLitSuffix(Mode, bHasNormalMap));
 }
 
 void FRenderResourceManager::LoadUberLitPermutations()
@@ -119,26 +122,35 @@ void FRenderResourceManager::LoadUberLitPermutations()
 		{ "VIEWMODE", Digits[static_cast<int32>(EViewMode::Unlit)] },
 		{ nullptr, nullptr }          // 배열 끝
 	};
-	LoadOrCompileShader(UberLitPath, GetUberLitSuffix({ EViewMode::Unlit }), UnlitDefines);
+	LoadOrCompileShader(UberLitPath, GetUberLitSuffix({ EViewMode::Unlit }, false), UnlitDefines);
 
-	const D3D_SHADER_MACRO WorldNormalDefines[] = {
-		{ "VIEWMODE", Digits[static_cast<int32>(EViewMode::WorldNormal)] },
-		{ nullptr, nullptr }
-	};
-	LoadOrCompileShader(UberLitPath, GetUberLitSuffix({ EViewMode::WorldNormal }), WorldNormalDefines);
+	for (int32 NM = 0; NM < 2; ++NM)
+	{
+		const D3D_SHADER_MACRO WorldNormalDefines[] = {
+			{ "VIEWMODE",       Digits[static_cast<int32>(EViewMode::WorldNormal)] },
+			{ "HAS_NORMAL_MAP", Digits[NM] },
+			{ nullptr, nullptr }
+		};
+		LoadOrCompileShader(UberLitPath, GetUberLitSuffix({ EViewMode::WorldNormal }, NM), WorldNormalDefines);
+	}
 
 	for (int32 LM = 0; LM < 3; ++LM)          // Lambert, Phong, Blinn-Phong
 	{
 		for (int32 SM = 0; SM < 2; ++SM)      // Gouraud, Phong
 		{
-			const D3D_SHADER_MACRO Defines[] = {
-				{ "VIEWMODE",       Digits[static_cast<int32>(EViewMode::Lit)] },
-				{ "LIGHTING_MODEL", Digits[LM] },
-				{ "SHADING_MODEL",  Digits[SM] },
-				{ nullptr, nullptr }
-			};
-			const FViewRenderMode Mode{ EViewMode::Lit, static_cast<ELightingModel>(LM), static_cast<EShadingModel>(SM) };
-			LoadOrCompileShader(UberLitPath, GetUberLitSuffix(Mode), Defines);
+			for (int32 NM = 0; NM < 2; ++NM)
+			{
+				if (SM == 0 && NM == 1) continue; // Gouraud shading + Normal Map 스킵
+				const D3D_SHADER_MACRO Defines[] = {
+					{ "VIEWMODE",       Digits[static_cast<int32>(EViewMode::Lit)] },
+					{ "LIGHTING_MODEL", Digits[LM] },
+					{ "SHADING_MODEL",  Digits[SM] },
+					{ "HAS_NORMAL_MAP", Digits[NM]},
+					{ nullptr, nullptr }
+				};
+				const FViewRenderMode Mode{ EViewMode::Lit, static_cast<ELightingModel>(LM), static_cast<EShadingModel>(SM) };
+				LoadOrCompileShader(UberLitPath, GetUberLitSuffix(Mode, NM), Defines);
+			}
 		}
 	}
 }

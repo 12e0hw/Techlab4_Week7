@@ -469,7 +469,8 @@ void FRenderer::EndObjectConstants()
 
 void FRenderer::SetViewMode(const FViewRenderMode& Mode)
 {
-	ViewModeShader = FRenderResourceManager::GetUberLitProgram(Mode);
+	ViewModeShader = FRenderResourceManager::GetUberLitProgram(Mode, false);
+	ViewModeNormalShader = FRenderResourceManager::GetUberLitProgram(Mode, true);
 }
 
 void FRenderer::SetLighting(const FLightingConstants& GlobalLights,
@@ -490,7 +491,16 @@ void FRenderer::BindMaterial(UMaterial* material)
 	{
 		if (!ViewModeShader)
 			SetViewMode(FViewRenderMode{});
-		RenderCommand::BindShaderProgram(ViewModeShader);
+
+		bool bUseNormalMap = material->Textures.size() > 1 && material->Textures[1] != nullptr;
+		if (bUseNormalMap)
+		{
+			RenderCommand::BindShaderProgram(ViewModeNormalShader);
+		}
+		else
+		{
+			RenderCommand::BindShaderProgram(ViewModeShader);
+		}
 	}
 	else
 	{
