@@ -552,9 +552,13 @@ FWorldContext* UEditorEngine::GetPIEWorldContext(int32 WorldPIEInstance)
 }
 
 // 입력 View의 Ray와 피킹으로 Gizmo·공유 선택을 갱신한다.
-void UEditorEngine::RenderOpaquePass(const int32 ViewIndex, const FRenderingInfo& ViewRenderingInfo, const FMatrix& ViewProjection, const FVector& ViewCameraLocation, const FVector& ViewCameraForward, FRenderQueue& RenderQueue)
+void UEditorEngine::RenderOpaquePass(const int32 ViewIndex, const FRenderingInfo& ViewRenderingInfo, const FMatrix& ViewProjection, 
+	const FVector& ViewCameraLocation, const FVector& ViewCameraForward, FRenderQueue& RenderQueue)
 {
-	Renderer->EnsureTileLightCapacity(ViewRenderingInfo.ViewportSetting.Width, ViewRenderingInfo.ViewportSetting.Height);
+	Renderer->EnsureTileLightCapacity(
+		ViewProjection,
+		ViewRenderingInfo.ViewportSetting.Width, 
+		ViewRenderingInfo.ViewportSetting.Height);
 
 	// 배경은 화면에서 sRGB 0.3 회색으로 보여야 한다. Linear 작업 흐름에서는 인코딩될 것이므로 디코딩해 지운다.
 	FRenderingInfo PassInfo = ViewRenderingInfo;

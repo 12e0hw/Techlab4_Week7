@@ -1,7 +1,8 @@
 #include "EnginePCH.h"
 
-#include "TileLightCulling.h"
 #include "RenderCommand.h"
+#include "TileLightCulling.h"
+#include "RenderUtil.h"
 
 namespace
 {
@@ -11,6 +12,94 @@ namespace
 	constexpr uint32 PointTileStride = MaxPointLightsPerTile + 1;
 	constexpr uint32 SpotTileStride = MaxSpotLightsPerTile + 1;
 }
+
+void FTileLightCulling::Init()
+{
+	CullingConstantBuffer = RenderCommand::CreateConstantBuffer(sizeof(FTileLightCullingConstants));
+
+	FString CSOPath;
+	FShaderByteCode ByteCode = RenderUtil::GetOrCompile("Resources/Shader/TileLightCulling.hlsl", "mainCS", EShaderType::Compute, CSOPath);
+
+	if (!ByteCode.IsValid())
+	{
+		HTR_LOG(Error, "TileLightCulling shader compile failed");
+		return;
+	}
+
+	ID3D11Device* Device = RenderCommand::GetDevice();
+	if (FAILED(Device->CreateComputeShader(ByteCode.GetData(), ByteCode.GetSize(), nullptr, CullLightsCS.GetAddressOf())))
+	{
+		HTR_LOG(Error, "TileLightCulling shader creation failed");
+		return;
+	}
+}
+
+void FTileLightCulling::Dispatch(const FLocalLight& Lights, const FMatrix& ViewProjection, uint32 Width, uint32 Height)
+{
+	if (!CullingConstantBuffer || !CullLightsCS || !PointTileListUAV || !SpotTileListUAV)
+		return;
+
+	// 이전 View에서 PS가 읽던 TileList를 이번 Dispatch의 UAV로 다시 쓰기 전에 해제한다.
+	UnbindForShading();
+
+	FTileLightCullingConstants Constants{};
+	Constants.InverseViewProjection = ViewProjection.Inverse();
+	Constants.ScreenWidth = Width;
+	Constants.ScreenHeight = Height;
+	Constants.TileCountX = TileCountX;
+	Constants.TileCountY = TileCountY;
+	Constants.NumPointLights = Lights.GetNumPointLights();
+	Constants.NumSpotLights = Lights.GetNumSpotLights();
+	Constants.PointTileStride = PointTileStride;
+	Constants.SpotTileStride = SpotTileStride;
+	RenderCommand::UpdateBufferData(CullingConstantBuffer.get(), &Constants);
+	RenderCommand::BindConstantBuffer(0, CullingConstantBuffer.get(), EShaderBindFlagBits::Compute);
+
+	ID3D11DeviceContext* Context = RenderCommand::GetContext();
+
+	Context->CSSetShader(CullLightsCS.Get(), nullptr, 0);
+
+	ID3D11ShaderResourceView* LightSRVs[2] = { Lights.GetPointLightSRV(), Lights.GetSpotLightSRV() };
+	Context->CSSetShaderResources(0, 2, LightSRVs);
+
+	ID3D11UnorderedAccessView* LightUAVs[2] = { PointTileListUAV.Get(), SpotTileListUAV.Get()};
+	Context->CSSetUnorderedAccessViews(0, 2, LightUAVs, nullptr);
+
+	Context->Dispatch(TileCountX, TileCountY, 1);
+
+	ID3D11Buffer* NullBuffer = nullptr;
+
+	ID3D11ShaderResourceView* NullSRVs[2] = {};
+	ID3D11UnorderedAccessView* NullUAVs[2] = {};
+	Context->CSSetShaderResources(0, 2, NullSRVs);
+	Context->CSSetUnorderedAccessViews(0, 2, NullUAVs, nullptr);
+	Context->CSSetConstantBuffers(0, 1, &NullBuffer);
+	Context->CSSetShader(nullptr, nullptr, 0);
+
+	BindForShading(Lights);
+}
+
+void FTileLightCulling::BindForShading(const FLocalLight& Lights)
+{
+	ID3D11ShaderResourceView* SRVs[4] = {
+		Lights.GetPointLightSRV(),
+		Lights.GetSpotLightSRV(),
+		PointTileListSRV.Get(),
+		SpotTileListSRV.Get()
+	};
+	RenderCommand::GetContext()->PSSetShaderResources(8, 4, SRVs);
+	RenderCommand::BindConstantBuffer(4, CullingConstantBuffer.get(), EShaderBindFlagBits::Pixel);
+}
+
+void FTileLightCulling::UnbindForShading()
+{
+	ID3D11ShaderResourceView* NullSRVs[4] = {};
+	ID3D11Buffer* NullBuffer = nullptr;
+	ID3D11DeviceContext* Context = RenderCommand::GetContext();
+	Context->PSSetShaderResources(8, 4, NullSRVs);
+	Context->PSSetConstantBuffers(4, 1, &NullBuffer);
+}
+
 
 bool FTileLightCulling::EnsureTileCapacity(uint32 Width, uint32 Height)
 {

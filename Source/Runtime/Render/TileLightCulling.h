@@ -1,14 +1,31 @@
 #pragma once
 
+#include "Render/Buffer.h"
+
 #include "Render/LightInfo.h"
 #include "Containers/Array.h"
 #include "LocalLight.h"
 
+struct FTileLightCullingConstants
+{
+    FMatrix InverseViewProjection;
+    uint32 ScreenWidth;
+    uint32 ScreenHeight;
+    uint32 TileCountX;
+    uint32 TileCountY;
+    uint32 NumPointLights;
+    uint32 NumSpotLights;
+    uint32 PointTileStride;
+    uint32 SpotTileStride;
+};
+
 class FTileLightCulling
 {
 public:
-    bool Init();
+    void Init();
     void Dispatch(const FLocalLight& Lights, const FMatrix& ViewProjection, uint32 Width, uint32 Height);
+    void BindForShading(const FLocalLight& Lights);
+    void UnbindForShading();
     
     bool EnsureTileCapacity(uint32 Width, uint32 Height);
     ID3D11ShaderResourceView* GetPointTileListSRV() const { return PointTileListSRV.Get(); }
@@ -20,6 +37,8 @@ private:
     bool CreatePointTileList(ID3D11Device* Device, uint32 TileCapacity);
     bool CreateSpotTileList(ID3D11Device* Device, uint32 TileCapacity);
     void ReleaseTileLists();
+
+    TUniquePtr<FConstantBuffer> CullingConstantBuffer;
 
     ComPtr<ID3D11ComputeShader> CullLightsCS;
 

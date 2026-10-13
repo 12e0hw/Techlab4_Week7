@@ -101,7 +101,7 @@ public:
 	uint8* BeginObjectConstants(uint32 MaxSlots);
 	void EndObjectConstants();
 
-	bool EnsureTileLightCapacity(uint32 Width, uint32 Height);
+	void EnsureTileLightCapacity(const FMatrix& ViewProjection, uint32 Width, uint32 Height);
 
 private:
 	// FIFO 소비용 배열의 용량만 재사용하며 매 View의 패킷 값은 새로 채운다.
