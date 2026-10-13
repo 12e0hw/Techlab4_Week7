@@ -73,7 +73,7 @@ struct FVSInput
 {
     float3 Position : POSITION;
     float3 Normal : NORMAL;
-    float3 Tangent : TANGENT;
+    float4 Tangent : TANGENT;
     float4 Color : COLOR; // 지금은 쓰지 않지만 나중에 쓰게 될 수 있음
     float2 UV : TEXCOORD;
 };
@@ -86,6 +86,7 @@ struct FPSInput
     float3 WorldPosition : TEXCOORD1;
 #if USE_NORMAL_MAP
     float3 Tangent : TANGENT;
+    int BitangentSign : BITANGENT_SIGN;
 #endif
 #if GOURAUD
     float3 DiffuseLight : TEXCOORD2;
@@ -256,7 +257,8 @@ FPSInput mainVS(FVSInput Input)
     Output.WorldPosition = WorldPosition.xyz;
     Output.Normal = mul(Input.Normal, (float3x3) NormalMatrix);
 #if USE_NORMAL_MAP
-    Output.Tangent = mul(Input.Tangent, (float3x3) World);
+    Output.Tangent = mul(Input.Tangent.xyz, (float3x3) World);
+    Output.BitangentSign = Input.Tangent.w;
 #endif
     Output.UV = Input.UV;
 #if GOURAUD
@@ -286,7 +288,7 @@ float4 mainPS(FPSInput Input) : SV_TARGET
 #if USE_NORMAL_MAP
     // 그람 슈미트 직교화
     float3 Tangent = normalize(Input.Tangent - dot(Input.Tangent, Normal) * Normal);
-    float3 BiTangent = cross(Tangent, Normal);
+    float3 BiTangent = cross(Normal, Tangent) * Input.BitangentSign;
     float3x3 TBN = float3x3(Tangent, BiTangent, Normal);
     // Texture Normal 매핑
     float3 NormalSample = NormalTexture.Sample(AlbedoSampler, Input.UV + UVScrollOffset).xyz;

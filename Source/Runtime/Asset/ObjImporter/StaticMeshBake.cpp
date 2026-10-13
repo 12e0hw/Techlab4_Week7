@@ -8,7 +8,7 @@
 #include "Render/StaticMeshData.h"
 #include "Core/EngineLog.h"
 
-static_assert(sizeof(FVertexPNCT) == 60);
+static_assert(sizeof(FVertexPNCT) == 64);
 
 // 바이트 그대로 읽고 쓰는 타입. 복사 생성자를 직접 작성하면 여기서 컴파일 오류가 난다
 static_assert(std::is_trivially_copyable_v<FVertexPNCT>);
@@ -21,7 +21,7 @@ static_assert(std::is_trivially_copyable_v<FLODSourceVertex>);
 namespace
 {
 	// FStaticMeshData, FVertexPNCT, FStaticMeshSection, FStaticMaterialSlot 구조가 바뀌면 올린다
-	constexpr uint32 BakeVersion = 7;
+	constexpr uint32 BakeVersion = 8;
 
 	struct FBakeHeader
 	{
