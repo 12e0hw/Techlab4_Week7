@@ -22,6 +22,8 @@ void FRenderResourceManager::ScanShaders(const fs::path& ShaderRoot)
 		if (!Entry.is_regular_file()) continue;
 		if (Entry.path().extension() != ".hlsl") continue;
 		if (Entry.path().filename() == "UberLit.hlsl") continue;
+		if (Entry.path().filename() == "TileLightCulling.hlsl") continue;
+		if (Entry.path().filename() == "TileDebugShader.hlsl") continue;
 
 		FString Path = Entry.path().generic_string();
 		LoadOrCompileShader(Path);

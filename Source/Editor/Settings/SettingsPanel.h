@@ -22,6 +22,7 @@ struct FEditorSettings
 	// Rendering
 	bool bEnableFXAA = true;
 	bool bDepthView = false;
+	bool bTileHeatmap = false;
 
 	// Grid
 	int32 GridSpacing = 1;

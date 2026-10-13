@@ -127,6 +127,24 @@ cbuffer LightingConstants : register(b3)
     float2 LightingPadding;
 };
 
+cbuffer TileCullConstants : register(b4)
+{
+    matrix Cull_InvVP;
+    float3 Cull_CameraPosition;
+    float Cull_Padding0;
+    float2 Cull_ScreenSize;
+    uint TileCountX;
+    uint TileCountY;
+    uint Cull_NumPointLights;
+    uint Cull_NumSpotLights;
+    float2 Cull_Padding1;
+};
+
+StructuredBuffer<uint> PointTileListSRV : register(t10);
+StructuredBuffer<uint> SpotTileListSRV : register(t11);
+StructuredBuffer<FPointLightInfo> AllPointLights : register(t12);
+StructuredBuffer<FSpotLightInfo> AllSpotLights : register(t13);
+
 Texture2D AlbedoTexture : register(t0);
 
 SamplerState AlbedoSampler : register(s0);
@@ -228,6 +246,75 @@ void ComputeLighting(float3 N, float3 WorldPosition, float3 V, float n, out floa
     }
 }
 
+void ComputeTileLighting(float3 N, float3 WorldPosition, float3 V, float n, uint TileOffset, out float3 DiffuseLight, out float3 SpecularLight)
+{
+    DiffuseLight = 0.0f;
+    SpecularLight = 0.0f;
+
+    // Directional
+    {
+        float3 Il = DirectionalLight.Color;
+        float3 L = -DirectionalLight.Direction;
+        AccumulateLight(Il, N, L, V, n, DiffuseLight, SpecularLight);
+    }
+
+    // Point
+    {
+        uint TilePointCount = PointTileListSRV[TileOffset];
+        for (uint i = 0; i < TilePointCount; ++i)
+        {
+            uint LightIndex = PointTileListSRV[TileOffset + 1 + i];
+            FPointLightInfo Light = AllPointLights[LightIndex];
+
+            float3 ToLight = Light.Position - WorldPosition;
+            float Distance = length(ToLight);
+            float Radius = Light.AttenuationRadius;
+
+            if (Distance >= Radius)
+            {
+                continue;
+            }
+
+            float3 L = ToLight / Distance;
+            float DistanceAttenuation = ComputeDistanceAttenuation(Distance, Radius);
+            float3 Il = Light.Color * DistanceAttenuation;
+
+            AccumulateLight(Il, N, L, V, n, DiffuseLight, SpecularLight);
+        }
+    }
+
+    // Spot
+    {
+        uint TileSpotCount = SpotTileListSRV[TileOffset];
+        for (uint j = 0; j < TileSpotCount; ++j)
+        {
+            uint LightIndex = SpotTileListSRV[TileOffset + 1 + j];
+            FSpotLightInfo Light = AllSpotLights[LightIndex];
+
+            float3 ToLight = Light.Position - WorldPosition;
+            float Distance = length(ToLight);
+            float Radius = Light.AttenuationRadius;
+
+            if (Distance >= Radius)
+            {
+                continue;
+            }
+
+            float3 L = ToLight / Distance;
+            float DistanceAttenuation = ComputeDistanceAttenuation(Distance, Radius);
+
+            float CosAngle = dot(-L, Light.Direction);
+            float SpotAttenuation = Light.CosInnerCone == Light.CosOuterCone
+            ? (CosAngle > Light.CosOuterCone ? 1.0f : 0.0f)
+            : saturate((CosAngle - Light.CosOuterCone) / (Light.CosInnerCone - Light.CosOuterCone));
+
+            float3 Il = Light.Color * DistanceAttenuation * SpotAttenuation;
+
+            AccumulateLight(Il, N, L, V, n, DiffuseLight, SpecularLight);
+        }
+    }
+}
+
 FPSInput mainVS(FVSInput Input)
 {
     FPSInput Output;
@@ -273,7 +360,17 @@ float4 mainPS(FPSInput Input) : SV_TARGET
 #else                   // Phong
     float3 N = normalize(Input.Normal);
     float3 V = normalize(CameraPosition - Input.WorldPosition);
-    ComputeLighting(N, Input.WorldPosition, V, Shininess, DiffuseLight, SpecularLight);
+
+    uint2 PixelPos = uint2(Input.Position.xy);
+    uint2 TileCoord = PixelPos / 16;
+    uint TileOffset = 0;
+    if (TileCoord.x < TileCountX && TileCoord.y < TileCountY)
+    {
+        uint TileIndex = TileCoord.y * TileCountX + TileCoord.x;
+        TileOffset = TileIndex * 65;
+    }
+
+    ComputeTileLighting(N, Input.WorldPosition, V, Shininess, TileOffset, DiffuseLight, SpecularLight);
 #endif
     FinalColor = float4(Ka * AmbientLight.Color + Kd * DiffuseLight + Ks * SpecularLight, Alpha);
     FinalColor.rgb = ACESFitted(FinalColor.rgb);

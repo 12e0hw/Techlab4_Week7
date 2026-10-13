@@ -103,6 +103,9 @@ public:
 
 	bool EnsureTileLightCapacity(uint32 Width, uint32 Height);
 
+	void CullLights(const FMatrix& ViewProjection, const FVector& CameraPosition, uint32 Width, uint32 Height);
+	void RenderTileLightDebug() { TileLightCulling.RenderDebugOverlay(); }
+
 private:
 	// FIFO 소비용 배열의 용량만 재사용하며 매 View의 패킷 값은 새로 채운다.
 	FRenderQueue RenderPackets;

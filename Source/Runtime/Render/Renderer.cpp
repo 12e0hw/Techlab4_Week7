@@ -73,6 +73,7 @@ bool FRenderer::Init()
 	RenderCommand::UpdateBufferData(LightingCB.get(), &LightingConstant);
 
 	GPUOcclusion.Init();   // 실패해도 오클루전만 못 쓸 뿐 렌더링은 된다
+	TileLightCulling.Init();
 
 	return true;
 }
@@ -148,14 +149,45 @@ void FRenderer::RenderAll(FRenderQueue& InQueue, const FMatrix& ViewProjection, 
 
 void FRenderer::RenderOpaque(const FMatrix& ViewProjection)
 {
+	ID3D11ShaderResourceView* SRVs[4] = {
+		TileLightCulling.GetPointTileListSRV(),
+		TileLightCulling.GetSpotTileListSRV(),
+		LocalLight.GetPointLightSRV(),
+		LocalLight.GetSpotLightSRV()
+	};
+	RenderCommand::GetContext()->PSSetShaderResources(10, 4, SRVs);
+	ID3D11Buffer* TileCB = TileLightCulling.GetCullConstantBuffer();
+	RenderCommand::GetContext()->PSSetConstantBuffers(4, 1, &TileCB);
+
 	DrawStaticGroups();
 	DrawPackets(0, FirstTranslucentIndex, ViewProjection);
+
+	ID3D11ShaderResourceView* NullSRVs[4] = { nullptr, nullptr, nullptr, nullptr };
+	ID3D11Buffer* NullCB = nullptr;
+	RenderCommand::GetContext()->PSSetShaderResources(10, 4, NullSRVs);
+	RenderCommand::GetContext()->PSSetConstantBuffers(4, 1, &NullCB);
 }
 
 // RenderOpaque가 남긴 반투명 패킷을 먼 것부터 그린다.
 void FRenderer::RenderTranslucent(const FMatrix& ViewProjection)
 {
+	ID3D11ShaderResourceView* SRVs[4] = {
+		TileLightCulling.GetPointTileListSRV(),
+		TileLightCulling.GetSpotTileListSRV(),
+		LocalLight.GetPointLightSRV(),
+		LocalLight.GetSpotLightSRV()
+	};
+	RenderCommand::GetContext()->PSSetShaderResources(10, 4, SRVs);
+	ID3D11Buffer* TileCB = TileLightCulling.GetCullConstantBuffer();
+	RenderCommand::GetContext()->PSSetConstantBuffers(4, 1, &TileCB);
+
 	DrawPackets(FirstTranslucentIndex, SortEntries.Num(), ViewProjection);
+
+	ID3D11ShaderResourceView* NullSRVs[4] = { nullptr, nullptr, nullptr, nullptr };
+	ID3D11Buffer* NullCB = nullptr;
+	RenderCommand::GetContext()->PSSetShaderResources(10, 4, NullSRVs);
+	RenderCommand::GetContext()->PSSetConstantBuffers(4, 1, &NullCB);
+
 	RenderPackets.Reset();
 	FirstTranslucentIndex = 0;
 	StaticGroups.clear();   // 묶음 메모리는 World 것이므로 이번 프레임이 끝나면 놓는다
@@ -576,4 +608,9 @@ void FRenderer::UpdatePerObjectConstants(const FMatrix& World, const FMatrix& No
 bool FRenderer::EnsureTileLightCapacity(uint32 Width, uint32 Height)
 {
 	return TileLightCulling.EnsureTileCapacity(Width, Height);
+}
+
+void FRenderer::CullLights(const FMatrix& ViewProjection, const FVector& CameraPosition, uint32 Width, uint32 Height)
+{
+	TileLightCulling.Dispatch(LocalLight, ViewProjection, CameraPosition, Width, Height);
 }

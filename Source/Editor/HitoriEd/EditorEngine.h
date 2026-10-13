@@ -115,6 +115,8 @@ private:
 	void RenderFXAAPass(const int32 ViewIndex, const FRenderingInfo& ViewRenderingInfo);
 	//Depth Pass
 	void RenderDepthPass(const int32 ViewIndex, const FRenderingInfo& ViewRenderingInfo, const FMatrix& ViewProjection, const FVector& ViewCameraLocation, const FVector& ViewCameraForward);
+	//Tile Heatmap Pass
+	void RenderTileHeatmapPass(const int32 ViewIndex, const FRenderingInfo& ViewRenderingInfo);
 
 
 

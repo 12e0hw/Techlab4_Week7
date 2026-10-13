@@ -552,6 +552,8 @@ FWorldContext* UEditorEngine::GetPIEWorldContext(int32 WorldPIEInstance)
 void UEditorEngine::RenderOpaquePass(const int32 ViewIndex, const FRenderingInfo& ViewRenderingInfo, const FMatrix& ViewProjection, const FVector& ViewCameraLocation, const FVector& ViewCameraForward, FRenderQueue& RenderQueue)
 {
 	Renderer->EnsureTileLightCapacity(ViewRenderingInfo.ViewportSetting.Width, ViewRenderingInfo.ViewportSetting.Height);
+	Renderer->CullLights(ViewProjection, ViewCameraLocation, ViewRenderingInfo.ViewportSetting.Width, ViewRenderingInfo.ViewportSetting.Height);
+
 	RenderCommand::BeginRenderPass(ViewRenderingInfo);
 
 	const bool bDrawPrimitives = SettingsPanel->GetSettings().bDrawPrimitives;
@@ -805,6 +807,21 @@ void UEditorEngine::RenderDepthPass(const int32 ViewIndex, const FRenderingInfo&
 	RenderCommand::EndRenderPass(PassInfo);
 }
 
+void UEditorEngine::RenderTileHeatmapPass(const int32 ViewIndex, const FRenderingInfo& ViewRenderingInfo)
+{
+	FRenderingInfo PassInfo = ViewRenderingInfo;
+
+	for (FRenderingDesc& Color : PassInfo.ColorRenderTargets)
+		Color.LoadOp = ERenderTargetLoadOp::Load;
+	PassInfo.DepthStencil.Texture = nullptr;
+
+	RenderCommand::BeginRenderPass(PassInfo);
+	RenderCommand::SetBlendState(EBlendState::AlphaBlend);
+	Renderer->RenderTileLightDebug();
+	RenderCommand::SetBlendState(EBlendState::Opaque);
+	RenderCommand::EndRenderPass(PassInfo);
+}
+
 // 입력 View의 Ray와 피킹으로 Gizmo·공유 선택을 갱신한다.
 void UEditorEngine::UpdateGizmoAndPicking()
 {
@@ -889,6 +906,9 @@ void UEditorEngine::RenderFrame(const int32 ViewIndex, UWorld& ViewWorld,
 		// 4. FXAA Pass: 밝기 계산이 감마 공간을 전제로 하므로 인코딩 뒤에 한다
 		if (SettingsPanel->GetSettings().bEnableFXAA)
 			RenderFXAAPass(ViewIndex, ViewRenderingInfo);
+
+		if (SettingsPanel->GetSettings().bTileHeatmap)
+			RenderTileHeatmapPass(ViewIndex, ViewRenderingInfo);
 	}
 
 	// 5. 오버레이 Pass: Grid·Gizmo·UUID는 sRGB 색으로 지정되므로 인코딩 뒤 표시용 타깃에 그린다
