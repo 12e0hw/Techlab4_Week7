@@ -252,6 +252,7 @@ void FStaticMeshData::CalculateTangents(TArray<FVertexPNCT>& Vertices, const TAr
 	{
 		Vertex.Tangent = FVector();
 	}
+
 	for (int32 i = 0; i < Indices.Num(); i += 3)
 	{
 		uint32 IndexA = Indices[i];
@@ -274,7 +275,14 @@ void FStaticMeshData::CalculateTangents(TArray<FVertexPNCT>& Vertices, const TAr
 		float DeltaU2 = uvC.X - uvA.X;
 		float DeltaV2 = uvC.Y - uvA.Y;
 
-		FVector FaceTangent = (Edge1 * DeltaV2 - Edge2 * DeltaV1) / (DeltaU1 * DeltaV2 - DeltaU2 * DeltaV1);
+		float Det = (DeltaU1 * DeltaV2 - DeltaU2 * DeltaV1);
+
+		if (std::abs(Det) < 1e-12f)
+		{
+			continue;
+		}
+
+		FVector FaceTangent = (Edge1 * DeltaV2 - Edge2 * DeltaV1) / Det;
 
 		Vertices[IndexA].Tangent += FaceTangent;
 		Vertices[IndexB].Tangent += FaceTangent;
@@ -283,6 +291,14 @@ void FStaticMeshData::CalculateTangents(TArray<FVertexPNCT>& Vertices, const TAr
 
 	for (FVertexPNCT& Vertex : Vertices)
 	{
-		Vertex.Tangent = Vertex.Tangent.Normalized();
+		FVector Tangent = Vertex.Tangent - Vertex.Normal * FVector::Dot(Vertex.Tangent, Vertex.Normal);
+
+		if (Tangent.Size() < 1e-6f)
+		{
+			const FVector Axis = std::abs(Vertex.Normal.Z) < 0.99f ? FVector(0.0f, 0.0f, 1.0f) : FVector(1.0f, 0.0f, 0.0f);
+			Tangent = FVector::Cross(Axis, Vertex.Normal);
+		}
+
+		Vertex.Tangent = Tangent.Normalized();
 	}
 }
