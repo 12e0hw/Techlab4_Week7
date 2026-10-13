@@ -288,7 +288,7 @@ float4 mainPS(FPSInput Input) : SV_TARGET
 #if USE_NORMAL_MAP
     // 그람 슈미트 직교화
     float3 Tangent = normalize(Input.Tangent - dot(Input.Tangent, Normal) * Normal);
-    float3 BiTangent = cross(Normal, Tangent) * Input.BitangentSign;
+    float3 BiTangent = cross(Tangent, Normal) * Input.BitangentSign;
     float3x3 TBN = float3x3(Tangent, BiTangent, Normal);
     // Texture Normal 매핑
     float3 NormalSample = NormalTexture.Sample(AlbedoSampler, Input.UV + UVScrollOffset).xyz;
