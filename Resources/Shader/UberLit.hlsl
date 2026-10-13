@@ -299,7 +299,6 @@ float4 mainPS(FPSInput Input) : SV_TARGET
     float3 WorldNormal = Normal;
 #endif
     
-
 #if VIEWMODE == VIEWMODE_UNLIT
     FinalColor = float4(Albedo, Alpha);
 #elif VIEWMODE == VIEWMODE_WORLDNORMAL
