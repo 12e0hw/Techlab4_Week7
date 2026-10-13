@@ -123,8 +123,7 @@ bool IntersectsSpotFrustum(FSpotLightInfo Light, float4 FrustumPlanes[6])
     return true;
 }
 
-
-[numthreads(16, 4, 1)]
+[numthreads(64, 1, 1)]
 void mainCS(uint3 GroupID : SV_GroupID, uint GroupIndex : SV_GroupIndex)
 {
     if (GroupID.x >= TileCountX || GroupID.y >= TileCountY)
@@ -134,30 +133,29 @@ void mainCS(uint3 GroupID : SV_GroupID, uint GroupIndex : SV_GroupIndex)
     
     uint TileIndex = GroupID.y * TileCountX + GroupID.x;  // 2차원 배열 변환
     
-    uint TileX = GroupID.x;
-    uint TileY = GroupID.y;
-    
-    uint MinX = TileX * 16;
-    uint MinY = TileY * 16;
-    uint MaxX = min(MinX + 16, ScreenWidth);
-    uint MaxY = min(MinY + 16, ScreenHeight);
-    
-    // -1~1 변환
-    float LeftNdc = (float) MinX / (float) ScreenWidth * 2.0f - 1.0f;
-    float RightNdc = (float) MaxX / (float) ScreenWidth * 2.0f - 1.0f;
-    float TopNdc = 1.0f - (float) MinY / (float) ScreenHeight * 2.0f;
-    float BottomNdc = 1.0f - (float) MaxY / (float) ScreenHeight * 2.0f;
-    
-    float2 NdcCorners[4] =
-    {
-        float2(LeftNdc, TopNdc),
-        float2(RightNdc, TopNdc),
-        float2(LeftNdc, BottomNdc),
-        float2(RightNdc, BottomNdc)
-    };
-    
     if (GroupIndex == 0)
-    {
+    {        uint TileX = GroupID.x;
+        uint TileY = GroupID.y;
+    
+        uint MinX = TileX * 16;
+        uint MinY = TileY * 16;
+        uint MaxX = min(MinX + 16, ScreenWidth);
+        uint MaxY = min(MinY + 16, ScreenHeight);
+    
+        // -1~1 변환
+        float LeftNdc = (float) MinX / (float) ScreenWidth * 2.0f - 1.0f;
+        float RightNdc = (float) MaxX / (float) ScreenWidth * 2.0f - 1.0f;
+        float TopNdc = 1.0f - (float) MinY / (float) ScreenHeight * 2.0f;
+        float BottomNdc = 1.0f - (float) MaxY / (float) ScreenHeight * 2.0f;
+    
+        float2 NdcCorners[4] =
+        {
+            float2(LeftNdc, TopNdc),
+            float2(RightNdc, TopNdc),
+            float2(LeftNdc, BottomNdc),
+            float2(RightNdc, BottomNdc)
+        };
+    
         float3 NearCorners[4];
         float3 FarCorners[4];
         for (uint Index = 0; Index < 4; ++Index)
