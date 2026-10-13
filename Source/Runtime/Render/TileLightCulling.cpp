@@ -18,21 +18,7 @@ void FTileLightCulling::Init()
 	CullingConstantBuffer = RenderCommand::CreateConstantBuffer(sizeof(FTileLightCullingConstants));
 
 	FString CSOPath;
-	//FShaderByteCode ByteCode = RenderUtil::GetOrCompile("Resources/Shader/TileLightCulling.hlsl", "mainCS", EShaderType::Compute, CSOPath);
-
-	//test
-	const D3D_SHADER_MACRO Defines[] =
-	{
-		{ "MAX_LIGHTS_PER_TILE", "64" },
-		{ nullptr, nullptr }
-	};
-	FShaderByteCode ByteCode = RenderUtil::GetOrCompile(
-		"Resources/Shader/TileLightCulling.hlsl",
-		"mainCS",
-		EShaderType::Compute,
-		CSOPath,
-		"_MaxLights64",
-		Defines);
+	FShaderByteCode ByteCode = RenderUtil::GetOrCompile("Resources/Shader/TileLightCulling.hlsl", "mainCS", EShaderType::Compute, CSOPath);
 
 	if (!ByteCode.IsValid())
 	{

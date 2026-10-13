@@ -189,11 +189,23 @@ void AccumulateLight(float3 Il, float3 N, float3 L, float3 V, float n, inout flo
     }
 }
 
-void ComputeLighting(float3 N, 
-#if USE_NORMAL_MAP
-    float3 GeoNormal, 
-#endif
-float3 WorldPosition, float3 V, float n, out float3 DiffuseLight, out float3 SpecularLight)
+float3 GetLightCountColor(uint LightCount)
+{
+    if (LightCount == 0u)
+        return float3(0.0f, 0.0f, 0.0f);
+    if (LightCount <= 4u)
+        return float3(0.0f, 0.0f, 1.0f);
+    if (LightCount <= 16u)
+        return float3(0.0f, 1.0f, 0.0f);
+    if (LightCount <= 32u)
+        return float3(1.0f, 1.0f, 0.0f);
+    if (LightCount <= 64u)
+        return float3(1.0f, 0.5f, 0.0f);
+    return float3(1.0f, 0.0f, 0.0f);
+}
+
+// 일단 GOURAUD 전용
+void ComputeLighting(float3 N, float3 WorldPosition, float3 V, float n, out float3 DiffuseLight, out float3 SpecularLight)
 {
     DiffuseLight = 0.0f;
     SpecularLight = 0.0f;
@@ -202,11 +214,7 @@ float3 WorldPosition, float3 V, float n, out float3 DiffuseLight, out float3 Spe
     {
         float3 Il = DirectionalLight.Color;
         float3 L = -DirectionalLight.Direction;
-#if USE_NORMAL_MAP
-        float GeoFactor = saturate(dot(GeoNormal, L) * 4.0f);
-#else
         float GeoFactor = 1.0f;
-#endif
         AccumulateLight(Il * GeoFactor, N, L, V, n, DiffuseLight, SpecularLight);
     }
 
@@ -222,13 +230,7 @@ float3 WorldPosition, float3 V, float n, out float3 DiffuseLight, out float3 Spe
                 continue;
 
             float3 L = ToLight / Distance;
-#if USE_NORMAL_MAP
-            float GeoFactor = saturate(dot(GeoNormal, L) * 4.0f);
-            if (GeoFactor <= 0.0f)
-                continue;
-#else
             float GeoFactor = 1.0f;
-#endif
 
             float DistanceAttenuation = ComputeDistanceAttenuation(Distance, Radius);
             float3 Il = Light.Color * DistanceAttenuation * GeoFactor;
@@ -247,13 +249,7 @@ float3 WorldPosition, float3 V, float n, out float3 DiffuseLight, out float3 Spe
             if (Distance >= Radius)
                 continue;
             float3 L = ToLight / Distance;
-#if USE_NORMAL_MAP
-            float GeoFactor = saturate(dot(GeoNormal, L) * 4.0f);
-            if (GeoFactor <= 0.0f)
-                continue;
-#else
             float GeoFactor = 1.0f;
-#endif
 
             float DistanceAttenuation = ComputeDistanceAttenuation(Distance, Radius);
             float CosAngle = dot(-L, Light.Direction);
@@ -267,22 +263,12 @@ float3 WorldPosition, float3 V, float n, out float3 DiffuseLight, out float3 Spe
     }
 }
 
-float3 GetLightCountColor(uint LightCount)
-{
-    if (LightCount == 0u)
-        return float3(0.0f, 0.0f, 0.0f);
-    if (LightCount <= 4u)
-        return float3(0.0f, 0.0f, 1.0f);
-    if (LightCount <= 16u)
-        return float3(0.0f, 1.0f, 0.0f);
-    if (LightCount <= 32u)
-        return float3(1.0f, 1.0f, 0.0f);
-    if (LightCount <= 64u)
-        return float3(1.0f, 0.5f, 0.0f);
-    return float3(1.0f, 0.0f, 0.0f);
-}
 
-void ComputeTiledLighting(float3 N, float3 GeoNormal, float3 WorldPosition, float3 V, float n, float2 PixelPosition, out float3 DiffuseLight, out float3 SpecularLight)
+void ComputeTiledLighting(float3 N, 
+#if USE_NORMAL_MAP
+    float3 GeoNormal,
+#endif
+float3 WorldPosition, float3 V, float n, float2 PixelPosition, out float3 DiffuseLight, out float3 SpecularLight)
 {
     DiffuseLight = 0.0f;
     SpecularLight = 0.0f;
@@ -291,7 +277,11 @@ void ComputeTiledLighting(float3 N, float3 GeoNormal, float3 WorldPosition, floa
     {
         float3 Il = DirectionalLight.Color;
         float3 L = -DirectionalLight.Direction;
+#if USE_NORMAL_MAP
         float GeoFactor = saturate(dot(GeoNormal, L) * 4.0f);
+#else
+        float GeoFactor = 1.0f;
+#endif
         AccumulateLight(Il * GeoFactor, N, L, V, n, DiffuseLight, SpecularLight);
     }
 
@@ -315,9 +305,13 @@ void ComputeTiledLighting(float3 N, float3 GeoNormal, float3 WorldPosition, floa
             continue;
 
         float3 L = ToLight / Distance;
+#if USE_NORMAL_MAP
         float GeoFactor = saturate(dot(GeoNormal, L) * 4.0f);
         if (GeoFactor <= 0.0f)
             continue;
+#else
+            float GeoFactor = 1.0f;
+#endif
 
         float DistanceAttenuation = ComputeDistanceAttenuation(Distance, Radius);
         float3 Il = Light.Color * DistanceAttenuation * GeoFactor;
@@ -341,9 +335,13 @@ void ComputeTiledLighting(float3 N, float3 GeoNormal, float3 WorldPosition, floa
             continue;
 
         float3 L = ToLight / Distance;
+#if USE_NORMAL_MAP
         float GeoFactor = saturate(dot(GeoNormal, L) * 4.0f);
         if (GeoFactor <= 0.0f)
             continue;
+#else
+            float GeoFactor = 1.0f;
+#endif
 
         float DistanceAttenuation = ComputeDistanceAttenuation(Distance, Radius);
         float CosAngle = dot(-L, normalize(Light.Direction));
@@ -373,10 +371,10 @@ FPSInput mainVS(FVSInput Input)
 #if GOURAUD
     float3 N = normalize(Output.Normal);
     float3 V = normalize(CameraPosition - Output.WorldPosition);
-    ComputeTiledLighting(N, Output.Normal, Output.WorldPosition, V, Shininess, Input.Position.xy, Output.DiffuseLight, Output.SpecularLight);
+    // TODO
+    ComputeLighting(N, Output.WorldPosition, V, Shininess, Output.DiffuseLight, Output.SpecularLight);
     
 #endif
-
     return Output;
 }
 
@@ -396,6 +394,26 @@ float4 mainPS(FPSInput Input) : SV_TARGET
     
     float3 Normal = normalize(Input.Normal);
     
+#if USE_NORMAL_MAP
+    // 그람 슈미트 직교화
+    float3 Tangent = normalize(Input.Tangent - dot(Input.Tangent, Normal) * Normal);
+    float3 BiTangent = cross(Tangent, Normal) * Input.BitangentSign;
+    float3x3 TBN = float3x3(Tangent, BiTangent, Normal);
+    // Texture Normal 매핑
+    float3 NormalSample = NormalTexture.Sample(AlbedoSampler, Input.UV + UVScrollOffset).xyz;
+    float3 TextureNormal = normalize(NormalSample * 2.0f - 1.0f);
+    // TBN 행렬을 이용하여 월드 공간으로 변환
+    float3 WorldNormal = mul(TextureNormal, TBN);
+# else
+    float3 WorldNormal = Normal;
+#endif
+   
+#if VIEWMODE == VIEWMODE_UNLIT
+    FinalColor = float4(Albedo, Alpha);
+#elif VIEWMODE == VIEWMODE_WORLDNORMAL
+    // 색이 아니라 데이터이므로 Gamma Encode Pass에서 인코딩하지 않는다.
+    FinalColor = float4(normalize(WorldNormal) * 0.5f + 0.5f, 1.0f);
+#else // Lit
     if (bVisualizeLightCount != 0u)
     {
         uint2 TileCoord = min(uint2(Input.Position.xy) / 16u, uint2(TileCountX - 1u, TileCountY - 1u));
@@ -407,27 +425,6 @@ float4 mainPS(FPSInput Input) : SV_TARGET
         return float4(GetLightCountColor(PointCount + SpotCount), 1.0f);
     }
     
-#if USE_NORMAL_MAP
-    // 그람 슈미트 직교화
-    float3 Tangent = normalize(Input.Tangent - dot(Input.Tangent, Normal) * Normal);
-    float3 BiTangent = cross(Tangent, Normal) * Input.BitangentSign;
-    float3x3 TBN = float3x3(Tangent, BiTangent, Normal);
-    // Texture Normal 매핑
-    float3 NormalSample = NormalTexture.Sample(AlbedoSampler, Input.UV + UVScrollOffset).xyz;
-    float3 TextureNormal = normalize(NormalSample * 2.0f - 1.0f);
-    // TBN 행렬을 이용하여 월드 공간으로 변환
-    float3 WorldNormal = mul(TextureNormal, TBN);
-    
-# else
-    float3 WorldNormal = Normal;
-#endif
-    
-#if VIEWMODE == VIEWMODE_UNLIT
-    FinalColor = float4(Albedo, Alpha);
-#elif VIEWMODE == VIEWMODE_WORLDNORMAL
-    // 색이 아니라 데이터이므로 Gamma Encode Pass에서 인코딩하지 않는다.
-    FinalColor = float4(normalize(WorldNormal) * 0.5f + 0.5f, 1.0f);
-#else // Lit
     float3 DiffuseLight;
     float3 SpecularLight;
 #if SHADING_MODEL == SHADING_MODEL_GOURAUD
@@ -440,7 +437,7 @@ float4 mainPS(FPSInput Input) : SV_TARGET
 #if USE_NORMAL_MAP
     ComputeTiledLighting(N, Normal, Input.WorldPosition, V, Shininess, Input.Position.xy, DiffuseLight, SpecularLight);
 #else
-    ComputeLighting(N, Input.WorldPosition, V, Shininess, DiffuseLight, SpecularLight);
+    ComputeTiledLighting(N, Input.WorldPosition, V, Shininess, Input.Position.xy, DiffuseLight, SpecularLight);
 #endif
     
 #endif
