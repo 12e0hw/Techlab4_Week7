@@ -9,6 +9,6 @@ APointLightActor::APointLightActor()
 
 	BillboardComponent = CreateDefaultSubobject<UBillboardComponent>("UBillboardComponent");
 	BillboardComponent->SetupAttachment(LightComponent);
-	BillboardComponent->SetHiddenInDetails(true);
+	BillboardComponent->SetHiddenInDetails(false);
 	BillboardComponent->SetTexture(ResourcePaths::PointLightIcon);
 }
