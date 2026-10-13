@@ -20,6 +20,20 @@
 
 namespace
 {
+	void SetMaterialTexture(int32 SlotIndex, UMaterial* Material,
+		const FString& TexturePath, bool bGenerateMipmaps = true, bool bSRGB = true)
+	{
+		while (static_cast<int32>(Material->Textures.Num()) <= SlotIndex)
+		{
+			Material->Textures.Add(nullptr);
+		}
+		if (!TexturePath.empty())
+		{
+			UTexture2D* Texture = UAssetManager::Get().LoadTexture(TexturePath, bGenerateMipmaps, bSRGB);
+			Material->Textures[SlotIndex] = Texture;
+		}
+	}
+
 	UStaticMesh* CreateStaticMesh(const FStaticMeshData* MeshData)
 	{
 		if (!MeshData || !MeshData->Vertices.Num() || !MeshData->Indices.Num())
@@ -90,15 +104,7 @@ namespace
 					Material->Textures[0] = Texture;
 				}
 			}
-			if (!Slot.NormalTexturePath.empty())
-			{
-				// 노멀맵은 색이 아니라 방향 데이터라 sRGB 디코딩을 하면 벡터가 틀어진다
-				UTexture2D* Texture = UAssetManager::Get().LoadTexture(Slot.NormalTexturePath, true, false);
-				if (Texture)
-				{
-					Material->Textures[1] = Texture;
-				}
-			}
+			SetMaterialTexture(1, Material, Slot.NormalTexturePath, true, false);
 			Mesh->Materials.Add(Material);
 		}
 
@@ -319,9 +325,9 @@ void UAssetManager::CreateDefaultMeshes()
 void UAssetManager::CreateDefaultMaterial()
 {
 	UMaterial* DefaultMat = NewObject<UMaterial>();
-	DefaultMat->Shader = FRenderResourceManager::GetUberLitProgram(FViewRenderMode{});
+	DefaultMat->Shader = FRenderResourceManager::GetUberLitProgram(FViewRenderMode{}, false);
 	DefaultMat->Textures.Add(GetAssetByPath<UTexture2D>("WhiteTexture"));
-	DefaultMat->Textures.Add(GetAssetByPath<UTexture2D>("FlatNormalTexture"));
+	 //DefaultMat->Textures.Add(GetAssetByPath<UTexture2D>("FlatNormalTexture"));
 
 	DefaultMat->ParamLayout = EMaterialParamLayout::StaticMesh;
 	DefaultMat->ParamBuffer = RenderCommand::CreateConstantBuffer(sizeof(FStaticMeshMaterialParams));

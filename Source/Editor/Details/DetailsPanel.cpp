@@ -365,6 +365,7 @@ namespace
 			UMaterial* Override = MeshComponent->GetOverrideMaterial(Slot);
 			UMaterial* Effective = MeshComponent->GetMaterial(Slot);
 			UTexture2D* Texture = (Effective && Effective->Textures.Num() > 0) ? Effective->Textures[0] : nullptr;
+			UTexture2D* NormalTexture = (Effective && Effective->Textures.Num() > 1) ? Effective->Textures[1] : nullptr;
 
 			ImGui::SameLine();
 
@@ -452,7 +453,66 @@ namespace
 
 					ImGui::TableNextRow();
 
-					// 3: Base Color
+					ImGui::TableSetColumnIndex(0);
+					ImGui::Text("NormalTexture");
+
+					ImGui::TableSetColumnIndex(1);
+
+					// 3: 노말 텍스처 썸네일
+					if (NormalTexture && NormalTexture->GetResource())
+					{
+						ImGui::Image((ImTextureID)NormalTexture->GetResource()->GetRawSRV(), { ThumbnailSize, ThumbnailSize });
+						if (ImGui::IsItemHovered())
+						{
+							ImGui::SetTooltip("%s", NormalTexture->GetPath().c_str());
+						}
+					}
+					else
+					{
+						ImGui::Button("EmptyNormal", { ThumbnailSize, ThumbnailSize });
+					}
+					if (ImGui::BeginDragDropTarget())
+					{
+						if (const ImGuiPayload* Payload = ImGui::AcceptDragDropPayload(EditorDragDrop::Texture))
+						{
+							UTexture2D* DroppedNormalTexture = *static_cast<UTexture2D**>(Payload->Data);
+							Override = EnsureMaterialOverride(MeshComponent, Slot, Effective, Override);
+
+							if (Override)
+							{
+								if (Override->Textures.Num() == 0)
+								{
+									Override->Textures.Add(nullptr);
+								}
+								Override->Textures[1] = DroppedNormalTexture;
+								NormalTexture = DroppedNormalTexture;
+								Effective = Override;
+							}
+						}
+						ImGui::EndDragDropTarget();
+					}
+					ImGui::SameLine();
+
+					// 4: 노말 텍스처 경로
+					if (NormalTexture)
+					{
+						fs::path Path(NormalTexture->GetPath());
+						FString FileName = Path.filename().string();
+
+						ImGui::TextWrapped("%s", FileName.c_str());
+						if (ImGui::IsItemHovered())
+						{
+							ImGui::SetTooltip("%s", NormalTexture->GetPath().c_str());
+						}
+					}
+					else
+					{
+						ImGui::TextDisabled("(Empty)");
+					}
+
+					ImGui::TableNextRow();
+
+					// 5: Base Color
 					ImGui::TableSetColumnIndex(0);
 					ImGui::Text("Base Color");
 
@@ -473,7 +533,7 @@ namespace
 
 					ImGui::TableNextRow();
 
-					// 4: UV Scroll Speed
+					// 6: UV Scroll Speed
 					ImGui::TableSetColumnIndex(0);
 					ImGui::Text("UV Scroll");
 
@@ -531,7 +591,7 @@ namespace
 
 					ImGui::TableNextRow();
 
-					// 5: Sampler State
+					// 7: Sampler State
 					ImGui::TableSetColumnIndex(0);
 					ImGui::Text("Sampler");
 
@@ -559,7 +619,7 @@ namespace
 
 					ImGui::TableNextRow();
 
-					// 6: Blend State
+					// 8: Blend State
 					ImGui::TableSetColumnIndex(0);
 					ImGui::Text("Blend Mode");
 

@@ -248,10 +248,14 @@ void FStaticMeshData::CalculateNormals(TArray<FVertexPNCT>& Vertices, const TArr
 
 void FStaticMeshData::CalculateTangents(TArray<FVertexPNCT>& Vertices, const TArray<uint32>& Indices)
 {
+	TArray<FVector> Bitangents;
+	Bitangents.Init(FVector(), Vertices.Num());
+
 	for (FVertexPNCT& Vertex : Vertices)
 	{
-		Vertex.Tangent = FVector();
+		Vertex.Tangent = FVector4();
 	}
+
 	for (int32 i = 0; i < Indices.Num(); i += 3)
 	{
 		uint32 IndexA = Indices[i];
@@ -274,15 +278,38 @@ void FStaticMeshData::CalculateTangents(TArray<FVertexPNCT>& Vertices, const TAr
 		float DeltaU2 = uvC.X - uvA.X;
 		float DeltaV2 = uvC.Y - uvA.Y;
 
-		FVector FaceTangent = (Edge1 * DeltaV2 - Edge2 * DeltaV1) / (DeltaU1 * DeltaV2 - DeltaU2 * DeltaV1);
+		float Det = (DeltaU1 * DeltaV2 - DeltaU2 * DeltaV1);
+
+		if (std::abs(Det) < 1e-12f)
+		{
+			continue;
+		}
+
+		FVector FaceTangent = (Edge1 * DeltaV2 - Edge2 * DeltaV1) / Det;
+		FVector FaceBitangent = (Edge2 * DeltaU1 - Edge1 * DeltaU2) / Det;
 
 		Vertices[IndexA].Tangent += FaceTangent;
 		Vertices[IndexB].Tangent += FaceTangent;
 		Vertices[IndexC].Tangent += FaceTangent;
+
+		Bitangents[IndexA] += FaceBitangent;
+		Bitangents[IndexB] += FaceBitangent;
+		Bitangents[IndexC] += FaceBitangent;
 	}
 
-	for (FVertexPNCT& Vertex : Vertices)
+	for (int32 i = 0; i < Vertices.Num(); ++i)
 	{
-		Vertex.Tangent = Vertex.Tangent.Normalized();
+		FVertexPNCT& Vertex = Vertices[i];
+		FVector Tangent = Vertex.Tangent.XYZ - Vertex.Normal * FVector::Dot(Vertex.Tangent.XYZ, Vertex.Normal);
+
+		if (Tangent.Size() < 1e-6f)
+		{
+			const FVector Axis = std::abs(Vertex.Normal.Z) < 0.99f ? FVector(0.0f, 0.0f, 1.0f) : FVector(1.0f, 0.0f, 0.0f);
+			Tangent = FVector::Cross(Axis, Vertex.Normal);
+		}
+
+		float Sign = (FVector::Dot(FVector::Cross(Vertex.Normal, Tangent), Bitangents[i]) < 0.0f) ? -1.0f : 1.0f;
+		Vertex.Tangent = Tangent.Normalized();
+		Vertex.Tangent.W = Sign;
 	}
 }

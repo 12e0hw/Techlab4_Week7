@@ -20,6 +20,7 @@ struct FVector4 {
 			float Z;
 			float W;
 		};
+		FVector XYZ;
 	};
 
 	/* Constructor */
