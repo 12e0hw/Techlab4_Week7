@@ -17,6 +17,7 @@
 #include "UObject/UObjectIterator.h"
 #include "GameFramework/Actor.h"
 #include "Core/EngineLog.h"
+#include <algorithm>
 
 
 namespace
@@ -293,27 +294,42 @@ namespace
 
 		if (bOpen)
 		{
+			struct FMeshItem
+			{
+				FString DisplayName;
+				FString Path;
+				UStaticMesh* Mesh;
+			};
+
+			TArray<FMeshItem> Items;
 			for (TObjectIterator<UStaticMesh> Itr; Itr; ++Itr)
 			{
-				bool bSelected = (*Itr == Current);
-
 				FString ItemPath = Itr->GetPath();
-				FString ItemFileName = GetAssetDisplayName(ItemPath);
+				Items.Add({ GetAssetDisplayName(ItemPath), ItemPath, *Itr });
+			}
+			std::sort(Items.begin(), Items.end(), [](const FMeshItem& A, const FMeshItem& B)
+			{
+				return _stricmp(A.DisplayName.c_str(), B.DisplayName.c_str()) < 0;
+			});
 
-				ImGui::PushID(*Itr);
+			for (const FMeshItem& Item : Items)
+			{
+				bool bSelected = (Item.Mesh == Current);
 
-				if (ImGui::Selectable(ItemFileName.c_str(), bSelected))
+				ImGui::PushID(Item.Mesh);
+
+				if (ImGui::Selectable(Item.DisplayName.c_str(), bSelected))
 				{
 					if (ImGui::IsItemHovered())
 					{
-						ImGui::SetTooltip("%s", ItemPath.c_str());
+						ImGui::SetTooltip("%s", Item.Path.c_str());
 					}
 
 					// 메모리를 직접 바꾸지 않고 SetFont를 거친다
 					if (UStaticMeshComponent* MeshComponent = Cast<UStaticMeshComponent>(Owner))
-						MeshComponent->SetStaticMesh(*Itr);
+						MeshComponent->SetStaticMesh(Item.Mesh);
 					else
-						*StaticMeshPtr = *Itr;
+						*StaticMeshPtr = Item.Mesh;
 				}
 				ImGui::PopID();
 				if (bSelected)
