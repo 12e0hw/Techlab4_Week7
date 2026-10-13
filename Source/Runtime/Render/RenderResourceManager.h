@@ -23,9 +23,9 @@ public:
 	static void Shutdown();
 
 	static FShaderProgram* GetShaderProgram(const FString& InPath);
-	static FShaderProgram* GetUberLitProgram(const FViewRenderMode& Mode);
+	static FShaderProgram* GetUberLitProgram(const FViewRenderMode& Mode, bool bHasNormalMap);
 private:
-	static FString GetUberLitSuffix(const FViewRenderMode& Mode);
+	static FString GetUberLitSuffix(const FViewRenderMode& Mode, bool bHasNormalMap = false);
 	void LoadOrCompileShader(const FString& Path, const FString& PermutationSuffix = "", const D3D_SHADER_MACRO* Defines = nullptr);
 	void LoadUberLitPermutations();
 

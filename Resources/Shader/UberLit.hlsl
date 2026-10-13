@@ -27,6 +27,11 @@
 #define SHADING_MODEL SHADING_MODEL_PHONG
 #endif
 
+#ifndef HAS_NORMAL_MAP
+#define HAS_NORMAL_MAP 0
+#endif
+#define USE_NORMAL_MAP (SHADING_MODEL == SHADING_MODEL_PHONG && HAS_NORMAL_MAP)
+
 #define GOURAUD (VIEWMODE == VIEWMODE_LIT && SHADING_MODEL == SHADING_MODEL_GOURAUD)
 
 #define MAX_POINT_LIGHTS 4
@@ -100,9 +105,11 @@ struct FPSInput
 {
     float4 Position : SV_POSITION;
     float3 Normal : NORMAL;
-    float3 Tangent : TANGENT;
     float2 UV : TEXCOORD0;
     float3 WorldPosition : TEXCOORD1;
+#if USE_NORMAL_MAP
+    float3 Tangent : TANGENT;
+#endif
 #if GOURAUD
     float3 DiffuseLight : TEXCOORD2;
     float3 SpecularLight : TEXCOORD3;
@@ -144,7 +151,10 @@ cbuffer LightingConstants : register(b3)
 };
 
 Texture2D AlbedoTexture : register(t0);
+
+#if USE_NORMAL_MAP
 Texture2D NormalTexture : register(t1);
+#endif
 
 SamplerState AlbedoSampler : register(s0);
 
@@ -181,7 +191,11 @@ void AccumulateLight(float3 Il, float3 N, float3 L, float3 V, float n, inout flo
     }
 }
 
-void ComputeLighting(float3 N, float3 GeoNormal, float3 WorldPosition, float3 V, float n, out float3 DiffuseLight, out float3 SpecularLight)
+void ComputeLighting(float3 N, 
+#if USE_NORMAL_MAP
+    float3 GeoNormal, 
+#endif
+float3 WorldPosition, float3 V, float n, out float3 DiffuseLight, out float3 SpecularLight)
 {
     DiffuseLight = 0.0f;
     SpecularLight = 0.0f;
@@ -190,7 +204,11 @@ void ComputeLighting(float3 N, float3 GeoNormal, float3 WorldPosition, float3 V,
     {
         float3 Il = DirectionalLight.Color;
         float3 L = -DirectionalLight.Direction;
+#if USE_NORMAL_MAP
         float GeoFactor = saturate(dot(GeoNormal, L) * 4.0f);
+#else
+        float GeoFactor = 1.0f;
+#endif
         AccumulateLight(Il * GeoFactor, N, L, V, n, DiffuseLight, SpecularLight);
     }
 
@@ -206,9 +224,13 @@ void ComputeLighting(float3 N, float3 GeoNormal, float3 WorldPosition, float3 V,
                 continue;
 
             float3 L = ToLight / Distance;
+#if USE_NORMAL_MAP
             float GeoFactor = saturate(dot(GeoNormal, L) * 4.0f);
             if (GeoFactor <= 0.0f)
                 continue;
+#else
+            float GeoFactor = 1.0f;
+#endif
 
             float DistanceAttenuation = ComputeDistanceAttenuation(Distance, Radius);
             float3 Il = Light.Color * DistanceAttenuation * GeoFactor;
@@ -226,18 +248,21 @@ void ComputeLighting(float3 N, float3 GeoNormal, float3 WorldPosition, float3 V,
             float Radius = Light.AttenuationRadius;
             if (Distance >= Radius)
                 continue;
-
             float3 L = ToLight / Distance;
+#if USE_NORMAL_MAP
             float GeoFactor = saturate(dot(GeoNormal, L) * 4.0f);
             if (GeoFactor <= 0.0f)
                 continue;
+#else
+            float GeoFactor = 1.0f;
+#endif
 
             float DistanceAttenuation = ComputeDistanceAttenuation(Distance, Radius);
             float CosAngle = dot(-L, Light.Direction);
             float SpotAttenuation = Light.CosInnerCone == Light.CosOuterCone
             ? (CosAngle > Light.CosOuterCone ? 1.0f : 0.0f)
             : saturate((CosAngle - Light.CosOuterCone) / (Light.CosInnerCone - Light.CosOuterCone));
-
+            
             float3 Il = Light.Color * DistanceAttenuation * SpotAttenuation * GeoFactor;
             AccumulateLight(Il, N, L, V, n, DiffuseLight, SpecularLight);
         }
@@ -253,13 +278,14 @@ FPSInput mainVS(FVSInput Input)
     Output.Position = mul(WorldPosition, ViewProjection);
     Output.WorldPosition = WorldPosition.xyz;
     Output.Normal = mul(Input.Normal, (float3x3) NormalMatrix);
+#if USE_NORMAL_MAP
     Output.Tangent = mul(Input.Tangent, (float3x3) World);
+#endif
     Output.UV = Input.UV;
-
 #if GOURAUD
     float3 N = normalize(Output.Normal);
     float3 V = normalize(CameraPosition - Output.WorldPosition);
-    ComputeLighting(N, N, Output.WorldPosition, V, Shininess, Output.DiffuseLight, Output.SpecularLight);
+    ComputeLighting(N, Output.WorldPosition, V, Shininess, Output.DiffuseLight, Output.SpecularLight);
 #endif
 
     return Output;
@@ -280,6 +306,7 @@ float4 mainPS(FPSInput Input) : SV_TARGET
     float3 Ks = SpecularColor;
     
     float3 Normal = normalize(Input.Normal);
+#if USE_NORMAL_MAP
     // 그람 슈미트 직교화
     float3 Tangent = normalize(Input.Tangent - dot(Input.Tangent, Normal) * Normal);
     float3 BiTangent = cross(Tangent, Normal);
@@ -289,6 +316,10 @@ float4 mainPS(FPSInput Input) : SV_TARGET
     float3 TextureNormal = normalize(NormalSample * 2.0f - 1.0f);
     // TBN 행렬을 이용하여 월드 공간으로 변환
     float3 WorldNormal = mul(TextureNormal, TBN);
+# else
+    float3 WorldNormal = Normal;
+#endif
+    
 
 #if VIEWMODE == VIEWMODE_UNLIT
     FinalColor = float4(Albedo, Alpha);
@@ -304,7 +335,11 @@ float4 mainPS(FPSInput Input) : SV_TARGET
 #else // Phong
     float3 N = normalize(WorldNormal);
     float3 V = normalize(CameraPosition - Input.WorldPosition);
+#if USE_NORMAL_MAP
     ComputeLighting(N, Normal, Input.WorldPosition, V, Shininess, DiffuseLight, SpecularLight);
+#else
+    ComputeLighting(N, Input.WorldPosition, V, Shininess, DiffuseLight, SpecularLight);
+#endif
 #endif
     FinalColor = float4(Ka * AmbientLight.Color + Kd * DiffuseLight + Ks * SpecularLight, Alpha);
     FinalColor.rgb = ACESFitted(FinalColor.rgb);
