@@ -143,8 +143,25 @@ cbuffer LightingConstants : register(b3)
     float2 LightingPadding;
 };
 
+cbuffer TileLightConstants : register(b4)
+{
+    matrix TileInverseViewProjection;
+    uint TileScreenWidth;
+    uint TileScreenHeight;
+    uint TileCountX;
+    uint TileCountY;
+    uint StructuredPointLightCount;
+    uint StructuredSpotLightCount;
+    uint PointTileStride;
+    uint SpotTileStride;
+};
+
 Texture2D AlbedoTexture : register(t0);
 Texture2D NormalTexture : register(t1);
+StructuredBuffer<FPointLightInfo> StructuredPointLights : register(t8);
+StructuredBuffer<FSpotLightInfo> StructuredSpotLights : register(t9);
+StructuredBuffer<uint> PointTileList : register(t10);
+StructuredBuffer<uint> SpotTileList : register(t11);
 
 SamplerState AlbedoSampler : register(s0);
 
@@ -244,6 +261,78 @@ void ComputeLighting(float3 N, float3 GeoNormal, float3 WorldPosition, float3 V,
     }
 }
 
+void ComputeTiledLighting(float3 N, float3 GeoNormal, float3 WorldPosition, float3 V, float n, float2 PixelPosition, out float3 DiffuseLight, out float3 SpecularLight)
+{
+    DiffuseLight = 0.0f;
+    SpecularLight = 0.0f;
+
+    // 화면 전체에 영향을 주는 Directional Light는 타일 목록에 넣지 않는다.
+    {
+        float3 Il = DirectionalLight.Color;
+        float3 L = -DirectionalLight.Direction;
+        float GeoFactor = saturate(dot(GeoNormal, L) * 4.0f);
+        AccumulateLight(Il * GeoFactor, N, L, V, n, DiffuseLight, SpecularLight);
+    }
+
+    uint2 TileCoord = min(uint2(PixelPosition) / 16u, uint2(TileCountX - 1u, TileCountY - 1u));
+    uint TileIndex = TileCoord.y * TileCountX + TileCoord.x;
+
+    uint PointListStart = TileIndex * PointTileStride;
+    uint PointCount = min(PointTileList[PointListStart], 64u);
+    for (uint ListIndex = 0; ListIndex < PointCount; ++ListIndex)
+    {
+        uint LightIndex = PointTileList[PointListStart + 1u + ListIndex];
+        if (LightIndex >= StructuredPointLightCount)
+            continue;
+
+        FPointLightInfo Light = StructuredPointLights[LightIndex];
+        float3 ToLight = Light.Position - WorldPosition;
+        float Distance = length(ToLight);
+        float Radius = Light.AttenuationRadius;
+        if (Distance <= 0.0f || Distance >= Radius)
+            continue;
+
+        float3 L = ToLight / Distance;
+        float GeoFactor = saturate(dot(GeoNormal, L) * 4.0f);
+        if (GeoFactor <= 0.0f)
+            continue;
+
+        float DistanceAttenuation = ComputeDistanceAttenuation(Distance, Radius);
+        float3 Il = Light.Color * DistanceAttenuation * GeoFactor;
+        AccumulateLight(Il, N, L, V, n, DiffuseLight, SpecularLight);
+    }
+
+    uint SpotListStart = TileIndex * SpotTileStride;
+    uint SpotCount = min(SpotTileList[SpotListStart], 64u);
+    for (uint SpotListIndex = 0; SpotListIndex < SpotCount; ++SpotListIndex)
+    {
+        uint LightIndex = SpotTileList[SpotListStart + 1u + SpotListIndex];
+        if (LightIndex >= StructuredSpotLightCount)
+            continue;
+
+        FSpotLightInfo Light = StructuredSpotLights[LightIndex];
+        float3 ToLight = Light.Position - WorldPosition;
+        float Distance = length(ToLight);
+        float Radius = Light.AttenuationRadius;
+        if (Distance <= 0.0f || Distance >= Radius)
+            continue;
+
+        float3 L = ToLight / Distance;
+        float GeoFactor = saturate(dot(GeoNormal, L) * 4.0f);
+        if (GeoFactor <= 0.0f)
+            continue;
+
+        float DistanceAttenuation = ComputeDistanceAttenuation(Distance, Radius);
+        float CosAngle = dot(-L, normalize(Light.Direction));
+        float SpotAttenuation = Light.CosInnerCone == Light.CosOuterCone
+            ? (CosAngle > Light.CosOuterCone ? 1.0f : 0.0f)
+            : saturate((CosAngle - Light.CosOuterCone) / (Light.CosInnerCone - Light.CosOuterCone));
+
+        float3 Il = Light.Color * DistanceAttenuation * SpotAttenuation * GeoFactor;
+        AccumulateLight(Il, N, L, V, n, DiffuseLight, SpecularLight);
+    }
+}
+
 FPSInput mainVS(FVSInput Input)
 {
     FPSInput Output;
@@ -304,7 +393,8 @@ float4 mainPS(FPSInput Input) : SV_TARGET
 #else // Phong
     float3 N = normalize(WorldNormal);
     float3 V = normalize(CameraPosition - Input.WorldPosition);
-    ComputeLighting(N, Normal, Input.WorldPosition, V, Shininess, DiffuseLight, SpecularLight);
+    //ComputeLighting(N, Normal, Input.WorldPosition, V, Shininess, DiffuseLight, SpecularLight);
+    ComputeTiledLighting(N, Normal, Input.WorldPosition, V, Shininess, Input.Position.xy, DiffuseLight, SpecularLight);
 #endif
     FinalColor = float4(Ka * AmbientLight.Color + Kd * DiffuseLight + Ks * SpecularLight, Alpha);
     FinalColor.rgb = ACESFitted(FinalColor.rgb);
