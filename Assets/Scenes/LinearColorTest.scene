@@ -65,7 +65,7 @@
                         {
                             "Class": "UBillboardComponent",
                             "Material": {
-                                "Asset": "SubUVMaterial"
+                                "Asset": "Resources/Icons/PointLight_64x.png"
                             },
                             "Name": "UBillboardComponent",
                             "Parent": "UAmbientLightComponent",
@@ -155,7 +155,7 @@
                         {
                             "Class": "UBillboardComponent",
                             "Material": {
-                                "Asset": "SubUVMaterial"
+                                "Asset": "Resources/Icons/PointLight_64x.png"
                             },
                             "Name": "UBillboardComponent",
                             "Parent": "UDirectionalLightComponent",
@@ -334,7 +334,7 @@
                         {
                             "Class": "UBillboardComponent",
                             "Material": {
-                                "Asset": "SubUVMaterial"
+                                "Asset": "Resources/Icons/PointLight_64x.png"
                             },
                             "Name": "UBillboardComponent",
                             "Parent": "USpotLightComponent",
@@ -482,7 +482,7 @@
                         {
                             "Class": "UBillboardComponent",
                             "Material": {
-                                "Asset": "SubUVMaterial"
+                                "Asset": "Resources/Icons/PointLight_64x.png"
                             },
                             "Name": "UBillboardComponent",
                             "Parent": "UPointLightComponent",
@@ -573,7 +573,7 @@
                         {
                             "Class": "UBillboardComponent",
                             "Material": {
-                                "Asset": "SubUVMaterial"
+                                "Asset": "Resources/Icons/PointLight_64x.png"
                             },
                             "Name": "UBillboardComponent",
                             "Parent": "UPointLightComponent",
@@ -664,7 +664,7 @@
                         {
                             "Class": "UBillboardComponent",
                             "Material": {
-                                "Asset": "SubUVMaterial"
+                                "Asset": "Resources/Icons/PointLight_64x.png"
                             },
                             "Name": "UBillboardComponent",
                             "Parent": "UPointLightComponent",
@@ -814,7 +814,7 @@
                         {
                             "Class": "UBillboardComponent",
                             "Material": {
-                                "Asset": "SubUVMaterial"
+                                "Asset": "Resources/Icons/PointLight_64x.png"
                             },
                             "Name": "UBillboardComponent",
                             "Parent": "USpotLightComponent",
@@ -907,7 +907,7 @@
                         {
                             "Class": "UBillboardComponent",
                             "Material": {
-                                "Asset": "SubUVMaterial"
+                                "Asset": "Resources/Icons/PointLight_64x.png"
                             },
                             "Name": "UBillboardComponent",
                             "Parent": "USpotLightComponent",
@@ -1055,7 +1055,7 @@
                         {
                             "Class": "UBillboardComponent",
                             "Material": {
-                                "Asset": "SubUVMaterial"
+                                "Asset": "Resources/Icons/PointLight_64x.png"
                             },
                             "Name": "UBillboardComponent",
                             "Parent": "UPointLightComponent",
