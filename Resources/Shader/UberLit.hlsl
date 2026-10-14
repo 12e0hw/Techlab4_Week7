@@ -417,13 +417,26 @@ float4 mainPS(FPSInput Input) : SV_TARGET
 #else // Lit
     if (bVisualizeLightCount != 0u)
     {
-        uint2 TileCoord = min(uint2(Input.Position.xy) / 16u, uint2(TileCountX - 1u, TileCountY - 1u));
+        uint2 PixelCoord = uint2(Input.Position.xy);
+        uint2 TileCoord = min(PixelCoord / 16u, uint2(TileCountX - 1u, TileCountY - 1u));
         uint TileIndex = TileCoord.y * TileCountX + TileCoord.x;
+        
         uint PointListStart = TileIndex * PointTileStride;
         uint SpotListStart = TileIndex * SpotTileStride;
+        
         uint PointCount = min(PointTileList[PointListStart], 64u);
         uint SpotCount = min(SpotTileList[SpotListStart], 64u);
-        return float4(GetLightCountColor(PointCount + SpotCount), 1.0f);
+        
+        float3 Color = GetLightCountColor(PointCount + SpotCount);
+        
+        uint2 LocalCoord = PixelCoord % 16u;
+
+        if (LocalCoord.x == 0u || LocalCoord.y == 0u)
+        {
+            Color *= 0.2f;
+        }
+
+        return float4(Color, 1.0f);
     }
     
     float3 DiffuseLight;
