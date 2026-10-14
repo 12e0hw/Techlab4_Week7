@@ -25,7 +25,7 @@ bool FGammaEncodeRenderer::Init()
 	return true;
 }
 
-void FGammaEncodeRenderer::OnRender(FTexture2D* SceneColor, bool bEncode)
+void FGammaEncodeRenderer::OnRender(FTexture2D* SceneColor, bool bEncode, bool bToneMap, float ExposureEV)
 {
 	if (!Shader || !SceneColor)
 		return;
@@ -35,6 +35,8 @@ void FGammaEncodeRenderer::OnRender(FTexture2D* SceneColor, bool bEncode)
 
 	FGammaEncodeConstants Constants{};
 	Constants.bEncode = bEncode ? 1u : 0u;
+	Constants.bToneMap = bToneMap ? 1u : 0u;
+	Constants.Exposure = std::exp2(ExposureEV);
 	RenderCommand::UpdateBufferData(ConstantBuffer.get(), &Constants);
 	RenderCommand::BindConstantBuffer(0, ConstantBuffer.get(), EShaderBindFlagBits::Pixel);
 
