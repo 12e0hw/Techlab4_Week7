@@ -134,7 +134,8 @@ void mainCS(uint3 GroupID : SV_GroupID, uint GroupIndex : SV_GroupIndex)
     uint TileIndex = GroupID.y * TileCountX + GroupID.x;  // 2차원 배열 변환
     
     if (GroupIndex == 0)
-    {        uint TileX = GroupID.x;
+    {        
+        uint TileX = GroupID.x;
         uint TileY = GroupID.y;
     
         uint MinX = TileX * 16;

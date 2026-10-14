@@ -4,12 +4,19 @@
 #include "PipelineState.h"
 #include "Texture2D.h"
 
+struct FDirectionalLightInfo;
+
 // HLSL의 cbuffer SkyboxConstants와 레이아웃이 일치해야 한다.
-// float3 뒤의 Padding은 16바이트 정렬 때문에 필요하다.
 struct FSkyboxConstants
 {
 	FMatrix InverseViewProjection;
 	FVector CameraPosition;
+	float SunRadius = 0.025f;
+
+	FVector SunDirection;
+	float SunIntensity = 10.0f;
+
+	FVector SunColor = FVector(1.0f, 0.95f, 0.9f);
 	float   Padding = 0.0f;
 };
 
@@ -24,10 +31,9 @@ public:
 	bool Init(const FString& PanoramaPath);
 
 	// 불투명 물체보다 먼저 호출한다. 깊이를 쓰지 않으므로 이후 물체가 위에 그려진다.
-	void OnRender(const FMatrix& ViewProjection, const FVector& CameraPosition);
+	void OnRender(const FMatrix& ViewProjection, const FVector& CameraPosition, const FDirectionalLightInfo& DirectionalLight);
 
 	bool IsValid() const { return Shader != nullptr && PanoramaTexture != nullptr; }
-
 private:
 	FShaderProgram* Shader = nullptr;
 	TUniquePtr<FConstantBuffer> ConstantBuffer;

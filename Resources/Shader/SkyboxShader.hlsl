@@ -6,7 +6,11 @@ cbuffer SkyboxConstants : register(b0)
 {
     matrix InverseViewProjection;
     float3 CameraPosition;
-    float  Padding;
+    float SunRadius;
+    float3 SunDirection;
+    float SunIntensity;
+    float3 SunColor;
+    float Padding;
 };
 
 Texture2D    PanoramaTexture : register(t0);
@@ -36,23 +40,48 @@ PSInput mainVS(uint VertexID : SV_VertexID)
 
 float4 mainPS(PSInput Input) : SV_TARGET
 {
-    // 화면 좌표 -> 원평면 위의 월드 좌표 -> 카메라가 그쪽을 보는 방향
     float2 NDC = Input.UV * float2(2.0f, -2.0f) + float2(-1.0f, 1.0f);
-
     float4 FarPoint = mul(float4(NDC, 1.0f, 1.0f), InverseViewProjection);
-    FarPoint /= FarPoint.w;                       // 원근 나눗셈. 빼먹으면 화면 가장자리가 틀어진다
-
+    FarPoint /= FarPoint.w;
     float3 Direction = normalize(FarPoint.xyz - CameraPosition);
 
-    // 방향 -> 등장방형 UV
-    // 엔진 좌표계는 Z-up / X-forward / Y-right (언리얼 규약).
-    // 따라서 수평면은 XY, 위쪽은 Z다. Y-up 기준 공식을 쓰면 하늘이 누워서 나온다.
     float2 PanoUV;
-    PanoUV.x = atan2(Direction.y, Direction.x) / (2.0f * PI) + 0.5f;  // 경도: XY 평면
-    PanoUV.y = acos(clamp(Direction.z, -1.0f, 1.0f)) / PI;            // 위도: +Z가 천정
+    PanoUV.x = atan2(Direction.y, Direction.x) / (2.0f * PI) + 0.5f;
+    PanoUV.y = acos(clamp(Direction.z, -1.0f, 1.0f)) / PI;
+    float3 SkyBase = PanoramaTexture.SampleLevel(LinearSampler, PanoUV, 0).rgb;
 
-    // Sample이 아니라 SampleLevel.
-    // atan2가 -PI/+PI 경계에서 U를 1.0 -> 0.0으로 점프시키는데,
-    // Sample은 그 UV 미분을 보고 최하위 밉을 골라 세로로 흐릿한 줄을 만든다.
-    return PanoramaTexture.SampleLevel(LinearSampler, PanoUV, 0);
+    // 태양 고도 계수 계산
+    float SunElevation = SunDirection.z;
+
+    float DayFactor = saturate(SunElevation * 3.5f);
+    float SunsetFactor = saturate(1.0f - abs(SunElevation - 0.06f) * 6.0f) * (1.0f - DayFactor * 0.5f);
+
+    const float3 DayTint = float3(1.0f, 1.0f, 1.0f);
+    const float3 SunsetTint = float3(4.0f, 0.55f, 0.22f);
+    const float3 NightTint = float3(0.015f, 0.025f, 0.06f);
+
+    // 낮과 밤을 먼저 보간한 뒤, 노을 구간에서 SunsetTint로 전환
+    float3 CurrentTint = lerp(NightTint, DayTint, DayFactor);
+    CurrentTint = lerp(CurrentTint, SunsetTint, SunsetFactor);
+
+    float3 SkyColor = SkyBase * CurrentTint;
+    
+
+    // 노을
+    float HorizonMask = pow(1.0f - abs(Direction.z), 4.0f);
+    float3 SunsetGlow = float3(1.0f, 0.35f, 0.08f) * (SunsetFactor * HorizonMask * 1.2f);
+    SkyColor += SunsetGlow;
+
+    // 태양
+    float SunDot = dot(Direction, SunDirection);
+    float CosSunRadius = cos(SunRadius);
+    float SunDisc = smoothstep(CosSunRadius - 0.0005f, CosSunRadius, SunDot);
+    float SunGlow = pow(saturate(SunDot), 48.0f) * 0.6f;
+
+    float3 DynamicSunColor = lerp(float3(1.0f, 0.35f, 0.1f), SunColor, DayFactor);
+    float SunVisibility = saturate((SunElevation + 0.05f) * 10.0f);
+
+    float3 SunLight = (SunDisc * SunIntensity + SunGlow) * DynamicSunColor * SunVisibility;
+
+    return float4(SkyColor + SunLight, 1.0f);
 }
