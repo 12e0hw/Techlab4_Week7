@@ -906,9 +906,10 @@ void UEditorEngine::RenderFrame(const int32 ViewIndex, UWorld& ViewWorld,
 			RenderFogPass(ViewIndex, ViewWorld, SceneRenderingInfo, ViewCameraLocation, ViewProjection, RenderQueue);
 
 		// 3. Gamma Encode Pass: Linear 씬 컬러 → (Lit이면 ACES) → 표시용 sRGB
+		const FEditorSettings& Settings = SettingsPanel->GetSettings();
 		const bool bEncode = !bVisualizeData && ColorWorkflow::bLinear;
-		RenderGammaEncodePass(SceneRenderingInfo, ViewRenderingInfo, bEncode, bEncode && ViewMode == EViewMode::Lit,
-			SettingsPanel->GetSettings().ExposureEV);
+		const bool bToneMap = bEncode && Settings.bToneMapping && ViewMode == EViewMode::Lit;
+		RenderGammaEncodePass(SceneRenderingInfo, ViewRenderingInfo, bEncode, bToneMap, Settings.ExposureEV);
 
 		// 4. FXAA Pass: 밝기 계산이 감마 공간을 전제로 하므로 인코딩 뒤에 한다
 		if (!bVisualizeData && SettingsPanel->GetSettings().bEnableFXAA)

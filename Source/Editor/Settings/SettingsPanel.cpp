@@ -58,9 +58,24 @@ void FSettingsPanel::OnRender()
 	ImGui::Checkbox("Depth View", &Settings.bDepthView);
 	ImGui::Checkbox("Linear Workflow", &Settings.bLinearWorkflow);
 	ImGui::SetItemTooltip("Off: no sRGB decode/encode (gamma-space rendering), for comparison.");
-	ImGui::BeginDisabled(!Settings.bLinearWorkflow);
+	// 톤매핑은 View별 Lit에서만 적용되므로, 보이는 View 중 Lit이 하나라도 있어야 조작할 의미가 있다
+	bool bAnyLitView = ViewportAdapter == nullptr;
+	for (int32 Index = 0; ViewportAdapter && Index < FMultipleViewportsAdapter::MaxViewCount; ++Index)
+	{
+		if (ViewportAdapter->IsViewActive(Index) && ViewportAdapter->GetViewRenderMode(Index).ViewMode == EViewMode::Lit)
+		{
+			bAnyLitView = true;
+			break;
+		}
+	}
+
+	ImGui::BeginDisabled(!Settings.bLinearWorkflow || !bAnyLitView);
+	ImGui::Checkbox("Tone Mapping (ACES)", &Settings.bToneMapping);
+	ImGui::SetItemTooltip("Compresses HDR scene color with ACES before sRGB encoding. Lit view only.");
+	ImGui::BeginDisabled(!Settings.bToneMapping);
 	ImGui::SliderFloat("Exposure (EV)", &Settings.ExposureEV, -4.0f, 4.0f, "%+.1f");
 	ImGui::SetItemTooltip("Scales scene color by 2^EV before ACES tone mapping. Lit view only.");
+	ImGui::EndDisabled();
 	ImGui::EndDisabled();
 
 	//////////////////////////////////////////////////////////
@@ -136,6 +151,7 @@ bool FSettingsPanel::SaveSettings() const
 	File << "EnableFXAA=" << Settings.bEnableFXAA << "\n";
 	File << "DepthView=" << Settings.bDepthView << "\n";
 	File << "LinearWorkflow=" << Settings.bLinearWorkflow << "\n";
+	File << "ToneMapping=" << Settings.bToneMapping << "\n";
 	File << "ExposureEV=" << Settings.ExposureEV << "\n";
 	File << "\n";
 
@@ -277,6 +293,7 @@ bool FSettingsPanel::LoadSettings()
 				else if (Key == "EnableFXAA") Settings.bEnableFXAA = std::stoi(ValueStr);
 				else if (Key == "DepthView") Settings.bDepthView = std::stoi(ValueStr);
 				else if (Key == "LinearWorkflow") Settings.bLinearWorkflow = std::stoi(ValueStr);
+				else if (Key == "ToneMapping") Settings.bToneMapping = std::stoi(ValueStr);
 				else if (Key == "ExposureEV") Settings.ExposureEV = std::stof(ValueStr);
 
 				else if (Key == "GridSpacing") Settings.GridSpacing = std::stoi(ValueStr);
