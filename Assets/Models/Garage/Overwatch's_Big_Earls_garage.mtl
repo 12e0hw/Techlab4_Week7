@@ -1,0 +1,629 @@
+newmtl lambert4
+Kd 1 1 1
+d 1
+Ke 0 0 0
+illum 2
+map_Kd images/Roof_2_Big_Earl_s_Roof_Second_RoofSG_Albed.png
+map_Bump images/Roof_2_Big_Earl_s_Roof_Second_RoofSG_Norma.png
+Ks 0 0 0
+Ns 0
+map_Ns images/Roof_2_Big_Earl_s_Roof_Second_RoofSG_Rough.png
+
+newmtl lambert5
+Kd 1 1 1
+d 1
+Ke 0 0 0
+illum 2
+map_Kd images/inside_wall_lambert5SG_Albedo.tga.png
+map_Bump images/inside_wall_lambert5SG_Normal.tga.png
+Ks 1 1 1
+Ns 0
+map_Ns images/inside_wall_lambert5SG_Roughness.tga.png
+
+newmtl lambert6
+Kd 1 1 1
+d 1
+Ke 0 0 0
+illum 2
+map_Kd images/big_sign_lambert6SG_Albedo.tga.png
+map_Bump images/big_sign_lambert6SG_Normal.tga.png
+Ks 1 1 1
+Ns 0
+map_Ns images/big_sign_lambert6SG_Roughness.tga.png
+
+newmtl lambert7
+Kd 1 1 1
+d 1
+Ke 0 0 0
+illum 2
+map_Kd images/Billboard_lambert7SG_Albedo.tga.png
+map_Bump images/Billboard_lambert7SG_Normal.tga.png
+Ks 1 1 1
+Ns 0
+map_Ns images/Billboard_lambert7SG_Roughness.tga.png
+
+newmtl lambert8
+Kd 1 1 1
+d 1
+Ke 0 0 0
+illum 2
+map_Kd images/power_cords_lambert8SG_Albedo.tga.png
+map_Bump images/power_cords_lambert8SG_Normal.tga.png
+Ks 1 1 1
+Ns 0
+map_Ns images/power_cords_lambert8SG_Roughness.tga.png
+
+newmtl lambert9
+Kd 1 1 1
+d 1
+Ke 0 0 0
+illum 2
+map_Kd images/electrical_box_lambert9SG_Albedo.tga.png
+map_Bump images/electrical_box_lambert9SG_Normal.tga.png
+Ks 1 1 1
+Ns 0
+map_Ns images/electrical_box_lambert9SG_Roughness.tga.png
+
+newmtl lambert10
+Kd 1 1 1
+d 1
+Ke 0 0 0
+illum 2
+map_Kd images/fuse_box_lambert10SG_Albedo.tga.png
+map_Bump images/fuse_box_lambert10SG_Normal.tga.png
+Ks 1 1 1
+Ns 0
+map_Ns images/fuse_box_lambert10SG_Roughness.tga.png
+
+newmtl lambert11
+Kd 1 1 1
+d 1
+Ke 1 1 1
+illum 2
+map_Kd images/aircon_lambert11SG_Albedo.tga.png
+map_Bump images/aircon_lambert11SG_Normal.tga.png
+map_Ke images/aircon_lambert11SG_Emissive.tga.png
+Ks 1 1 1
+Ns 0
+map_Ns images/aircon_lambert11SG_Roughness.tga.png
+
+newmtl lambert12
+Kd 1 1 1
+d 1
+Ke 0 0 0
+illum 2
+map_Kd images/small_window_lambert12SG_Albedo.tga.png
+map_Bump images/small_window_lambert12SG_Normal.tga.png
+Ks 1 1 1
+Ns 0
+map_Ns images/small_window_lambert12SG_Roughness.tga.png
+
+newmtl lambert13
+Kd 1 1 1
+d 1
+illum 2
+map_Kd images/barrles_lambert13SG_Albedo.tga.png
+map_Bump images/barrles_lambert13SG_Normal.tga.png
+Ks 1 1 1
+Ns 0
+map_Ns images/barrles_lambert13SG_Roughness.tga.png
+
+newmtl lambert15
+Kd 1 1 1
+d 1
+Ke 0 0 0
+illum 2
+map_Kd images/shelves_lambert15SG_Albedo.tga.png
+map_Bump images/shelves_lambert15SG_Normal.tga.png
+Ks 1 1 1
+Ns 0
+map_Ns images/shelves_lambert15SG_Roughness.tga.png
+
+newmtl lambert16
+Kd 1 1 1
+d 1
+Ke 0 0 0
+illum 2
+map_Kd images/jug_lambert16SG_Albedo.tga.png
+map_Bump images/jug_lambert16SG_Normal.tga.png
+Ks 1 1 1
+Ns 0
+map_Ns images/jug_lambert16SG_Roughness.tga.png
+
+newmtl lambert17
+Kd 1 1 1
+d 1
+Ke 0 0 0
+illum 2
+map_Kd images/piller_lambert17SG_Albedo.tga.png
+map_Bump images/piller_lambert17SG_Normal.tga.png
+Ks 1 1 1
+Ns 0
+map_Ns images/piller_lambert17SG_Roughness.tga.png
+
+newmtl lambert18
+Kd 1 1 1
+d 1
+Ke 0 0 0
+illum 2
+map_Kd images/Heading_lambert18SG_Albedo.tga.png
+map_Bump images/Heading_lambert18SG_Normal.tga.png
+Ks 0 0 0
+Ns 0
+map_Ns images/Heading_lambert18SG_Roughness.tga.png
+
+newmtl lambert19
+Kd 1 1 1
+d 1
+Ke 0 0 0
+illum 2
+map_Kd images/tire_tire_lambert19SG_Albedo.tga.png
+map_Bump images/tire_tire_lambert19SG_Normal.tga.png
+Ks 1 1 1
+Ns 0
+map_Ns images/tire_tire_lambert19SG_Roughness.tga.png
+
+newmtl lambert20
+Kd 1 1 1
+d 1
+Ke 0 0 0
+illum 2
+map_Kd images/Roof_landing_lambert20SG_Albedo.tga.png
+map_Bump images/Roof_landing_lambert20SG_Normal.tga.png
+Ks 1 1 1
+Ns 0
+map_Ns images/Roof_landing_lambert20SG_Roughness.tga.png
+
+newmtl lambert22
+Kd 1 1 1
+d 1
+illum 2
+map_Kd images/posters_lambert22SG_Albedo.tga.png
+map_Bump images/posters_lambert22SG_Normal.tga.png
+Ks 1 1 1
+Ns 0
+map_Ns images/posters_lambert22SG_Roughness.tga.png
+map_d images/posters_lambert22SG_Opacity.tga.png
+
+newmtl lambert25
+Kd 1 1 1
+d 1
+Ke 0 0 0
+illum 2
+map_Kd images/rocks_lambert25SG_Albedo.tga.png
+map_Bump images/rocks_lambert25SG_Normal.tga.png
+Ks 0 0 0
+Ns 0
+map_Ns images/rocks_lambert25SG_Roughness.tga.png
+
+newmtl lambert26
+Kd 1 1 1
+d 1
+Ke 0 0 0
+illum 2
+map_Kd images/sign_lambert26SG_Albedo.tga.png
+map_Bump images/sign_lambert26SG_Normal.tga.png
+Ks 1 1 1
+Ns 0
+map_Ns images/sign_lambert26SG_Roughness.tga.png
+
+newmtl lambert28
+Kd 1 1 1
+d 1
+Ke 0 0 0
+illum 2
+map_Kd images/bins_lambert28SG_Albedo.tga.png
+map_Bump images/bins_lambert28SG_AO.tga.png
+Ks 1 1 1
+Ns 0
+map_Ns images/bins_lambert28SG_Roughness.tga.png
+
+newmtl lambert29
+Kd 1 1 1
+d 1
+illum 2
+map_Kd images/Grass_lambert29SG_Albedo.tga.png
+map_Bump images/Grass_lambert29SG_Normal.tga.png
+Ks 1 1 1
+Ns 0
+map_Ns images/Grass_lambert29SG_Roughness.tga.png
+map_d images/Grass_lambert29SG_Opacity.tga.png
+
+newmtl lambert30
+Kd 1 1 1
+d 1
+Ke 0 0 0
+illum 2
+map_Kd images/tool_box_lambert30SG_Albedo.tga.png
+map_Bump images/tool_box_lambert30SG_Normal.tga.png
+Ks 1 1 1
+Ns 0
+map_Ns images/tool_box_lambert30SG_Roughness.tga.png
+
+newmtl lambert31
+Kd 1 1 1
+d 1
+Ke 1 1 1
+illum 2
+map_Kd images/health_pod_lambert31SG_Albedo.tga.png
+map_Bump images/health_pod_lambert31SG_Normal.tga.png
+map_Ke images/health_pod_lambert31SG_Emissive.tga.png
+Ks 1 1 1
+Ns 0
+map_Ns images/health_pod_lambert31SG_Roughness.tga.png
+map_d images/health_pod_lambert31SG_Opacity.tga.png
+
+newmtl lambert32
+Kd 1 1 1
+d 1
+illum 2
+map_Kd images/fridge_lambert32SG_Albedo.tga.png
+map_Bump images/fridge_lambert32SG_Normal.tga.png
+Ks 1 1 1
+Ns 0
+map_Ns images/fridge_lambert32SG_Roughness.tga.png
+
+newmtl lambert33
+Kd 1 1 1
+d 1
+illum 2
+map_Kd images/roof_lambert33SG_Albedo.tga.png
+map_Bump images/roof_lambert33SG_Normal.tga.png
+Ks 0 0 0
+Ns 0
+map_Ns images/roof_lambert33SG_Roughness.tga.png
+
+newmtl lambert34
+Kd 1 1 1
+d 1
+Ke 0 0 0
+illum 2
+map_Kd images/roof_skerting_lambert34SG_Albedo.tga.png
+map_Bump images/roof_skerting_lambert34SG_Normal.tga.png
+Ks 1 1 1
+Ns 0
+map_Ns images/roof_skerting_lambert34SG_Roughness.tga.png
+
+newmtl lambert35
+Kd 1 1 1
+d 1
+Ke 0 0 0
+illum 2
+map_Kd images/generator_lambert35SG_Albedo.tga.png
+map_Bump images/generator_lambert35SG_Normal.tga.png
+Ks 1 1 1
+Ns 0
+map_Ns images/generator_lambert35SG_Roughness.tga.png
+
+newmtl lambert36
+Kd 1 1 1
+d 1
+illum 2
+map_Kd images/small_heading_lambert36SG_Albedo.tga.png
+map_Bump images/small_heading_lambert36SG_Normal.tga.png
+Ks 1 1 1
+Ns 0
+map_Ns images/small_heading_lambert36SG_Roughness.tga.png
+map_d images/small_heading_lambert36SG_Opacity.tga.png
+
+newmtl lambert37
+Kd 1 1 1
+d 1
+Ke 0 0 0
+illum 2
+map_Kd images/Walls_lambert37SG_Albedo.tga.png
+map_Bump images/Walls_lambert37SG_Normal.tga.png
+Ks 0 0 0
+Ns 0
+map_Ns images/Walls_lambert37SG_Roughness.tga.png
+
+newmtl lambert39
+Kd 1 1 1
+d 1
+Ke 0 0 0
+illum 2
+map_Kd images/cooler_lambert39SG_Albedo.tga.png
+map_Bump images/cooler_lambert39SG_Normal.tga.png
+Ks 1 1 1
+Ns 0
+map_Ns images/cooler_lambert39SG_Roughness.tga.png
+
+newmtl lambert40
+Kd 1 1 1
+d 1
+illum 2
+map_Kd images/Phone_lambert40SG_Albedo.tga.png
+map_Bump images/Phone_lambert40SG_Normal.tga.png
+Ks 1 1 1
+Ns 0
+map_Ns images/Phone_lambert40SG_Roughness.tga.png
+map_d images/Phone_lambert40SG_Opacity.tga.png
+
+newmtl lambert41
+Kd 1 1 1
+d 1
+Ke 0 0 0
+illum 2
+map_Kd images/window_lambert41SG_Albedo.tga.png
+map_Bump images/window_lambert41SG_Normal.tga.png
+Ks 1 1 1
+Ns 0
+map_Ns images/window_lambert41SG_Roughness.tga.png
+
+newmtl lambert42
+Kd 1 1 1
+d 1
+Ke 0 0 0
+illum 2
+map_Kd images/stairs_landing_lambert42SG_Albedo.tga.png
+map_Bump images/stairs_landing_lambert42SG_Normal.tga.png
+Ks 1 1 1
+Ns 0
+map_Ns images/stairs_landing_lambert42SG_Roughness.tga.png
+
+newmtl lambert43
+Kd 1 1 1
+d 1
+Ke 0 0 0
+illum 2
+map_Kd images/floor_lambert43SG_Albedo.tga.png
+map_Bump images/floor_lambert43SG_Normal.tga.png
+Ks 1 1 1
+Ns 0
+map_Ns images/floor_lambert43SG_Roughness.tga.png
+
+newmtl lambert44
+Kd 1 1 1
+d 1
+Ke 0 0 0
+illum 2
+map_Kd images/Large_sign_lambert44SG_Albedo.tga.png
+map_Bump images/Large_sign_lambert44SG_Normal.tga.png
+Ks 1 1 1
+Ns 0
+map_Ns images/Large_sign_lambert44SG_Roughness.tga.png
+
+newmtl lambert45
+Kd 1 1 1
+d 1
+Ke 0 0 0
+illum 2
+map_Kd images/fence_lambert45SG_Albedo.tga.png
+map_Bump images/fence_lambert45SG_Normal.tga.png
+Ks 1 1 1
+Ns 0
+map_Ns images/fence_lambert45SG_Roughness.tga.png
+
+newmtl lambert46
+Kd 1 1 1
+d 1
+Ke 0 0 0
+illum 2
+map_Kd images/Vent_lambert46SG_Albedo.tga.png
+map_Bump images/Vent_lambert46SG_Normal.tga.png
+Ks 1 1 1
+Ns 0
+map_Ns images/Vent_lambert46SG_Roughness.tga.png
+
+newmtl lambert47
+Kd 1 1 1
+d 1
+Ke 0 0 0
+illum 2
+map_Kd images/Fuel_pump_platform_lambert47SG_Albedo.tga.png
+map_Bump images/Fuel_pump_platform_lambert47SG_Normal.tga.png
+Ks 0 0 0
+Ns 0
+map_Ns images/Fuel_pump_platform_lambert47SG_Roughness.t.png
+
+newmtl lambert48
+Kd 1 1 1
+d 1
+illum 2
+map_Kd images/Ground_Big_Earl_s_GroundSG_Albedo.tga.png
+map_Bump images/Ground_Big_Earl_s_GroundSG_Normal.tga.png
+Ks 1 1 1
+Ns 0
+map_Ns images/Ground_Big_Earl_s_GroundSG_Roughness.tga.png
+map_d images/Ground_Big_Earl_s_GroundSG_Opacity.tga.png
+
+newmtl lambert49
+Kd 1 1 1
+d 1
+Ke 0 0 0
+illum 2
+map_Kd images/oil_can_lambert49SG_Albedo.tga.png
+map_Bump images/oil_can_lambert49SG_Normal.tga.png
+Ks 1 1 1
+Ns 0
+map_Ns images/oil_can_lambert49SG_Roughness.tga.png
+
+newmtl lambert50
+Kd 1 1 1
+d 1
+Ke 0 0 0
+illum 2
+map_Kd images/tap_lambert50SG_Albedo.tga.png
+map_Bump images/tap_lambert50SG_Normal.tga.png
+Ks 1 1 1
+Ns 0
+map_Ns images/tap_lambert50SG_Roughness.tga.png
+
+newmtl lambert51
+Kd 1 1 1
+d 1
+Ke 0 0 0
+illum 2
+map_Kd images/lockers_lambert51SG_Albedo.tga.png
+map_Bump images/lockers_lambert51SG_Normal.tga.png
+Ks 1 1 1
+Ns 0
+map_Ns images/lockers_lambert51SG_Roughness.tga.png
+
+newmtl lambert52
+Kd 1 1 1
+d 1
+Ke 0 0 0
+illum 2
+map_Kd images/skerting_lambert52SG_Albedo.tga.png
+map_Bump images/skerting_lambert52SG_Normal.tga.png
+Ks 1 1 1
+Ns 0
+map_Ns images/skerting_lambert52SG_Roughness.tga.png
+
+newmtl lambert53
+Kd 1 1 1
+d 1
+Ke 0 0 0
+illum 2
+map_Kd images/door_frame_lambert53SG_Albedo.tga.png
+map_Bump images/door_frame_lambert53SG_Normal.tga.png
+Ks 0 0 0
+Ns 0
+map_Ns images/door_frame_lambert53SG_Roughness.tga.png
+
+newmtl lambert54
+Kd 1 1 1
+d 1
+Ke 0 0 0
+illum 2
+map_Kd images/inside_piller_lambert54SG_Albedo.tga.png
+map_Bump images/inside_piller_lambert54SG_Normal.tga.png
+Ks 1 1 1
+Ns 0
+map_Ns images/inside_piller_lambert54SG_Roughness.tga.png
+
+newmtl lambert55
+Kd 1 1 1
+d 1
+Ke 0 0 0
+illum 2
+map_Kd images/tire_rake_lambert55SG_Albedo.tga.png
+map_Bump images/tire_rake_lambert55SG_Normal.tga.png
+Ks 1 1 1
+Ns 0
+map_Ns images/tire_rake_lambert55SG_Roughness.tga.png
+
+newmtl lambert56
+Kd 1 1 1
+d 1
+illum 2
+map_Kd images/vending_machine_lambert56SG_Albedo.tga.png
+map_Bump images/vending_machine_lambert56SG_Normal.tga.png
+Ks 1 1 1
+Ns 0
+map_Ns images/vending_machine_lambert56SG_Roughness.tga.png
+map_d images/vending_machine_lambert56SG_Opacity.tga.png
+
+newmtl lambert57
+Kd 1 1 1
+d 1
+Ke 0 0 0
+illum 2
+map_Kd images/dumpster_lambert57SG_Albedo.tga.png
+map_Bump images/dumpster_lambert57SG_Normal.tga.png
+Ks 1 1 1
+Ns 0
+map_Ns images/dumpster_lambert57SG_Roughness.tga.png
+
+newmtl lambert58
+Kd 1 1 1
+d 1
+illum 2
+map_Kd images/Fuel_pump_lambert58SG_Albedo.tga.png
+map_Bump images/Fuel_pump_lambert58SG_Normal.tga.png
+Ks 1 1 1
+Ns 0
+map_Ns images/Fuel_pump_lambert58SG_Roughness.tga.png
+
+newmtl lambert59
+Kd 1 1 1
+d 1
+Ke 0 0 0
+illum 2
+map_Kd images/terp_lambert59SG_Albedo.tga.png
+map_Bump images/terp_lambert59SG_Normal.tga.png
+Ks 1 1 1
+Ns 0
+map_Ns images/terp_lambert59SG_Roughness.tga.png
+
+newmtl lambert60
+Kd 1 1 1
+d 1
+Ke 1 1 1
+illum 2
+map_Kd images/health_pack_lambert60SG_Albedo.tga.png
+map_Bump images/health_pack_lambert60SG_Normal.tga.png
+map_Ke images/health_pack_lambert60SG_Emissive.tga.png
+Ks 1 1 1
+Ns 0
+map_Ns images/health_pack_lambert60SG_Roughness.tga.png
+map_d images/health_pack_lambert60SG_Opacity.tga.png
+
+newmtl lambert61
+Kd 1 1 1
+d 1
+Ke 1 1 1
+illum 2
+map_Kd images/lights_lambert61SG_Albedo.tga.png
+map_Bump images/lights_lambert61SG_Normal.tga.png
+map_Ke images/lights_lambert61SG_Emissive.tga.png
+Ks 1 1 1
+Ns 0
+map_Ns images/lights_lambert61SG_Roughness.tga.png
+
+newmtl lambert62
+Kd 1 1 1
+d 1
+illum 2
+map_Kd images/puddles_lambert62SG_Albedo.tga.png
+map_Bump images/puddles_lambert62SG_Normal.tga.png
+Ks 0 0 0
+Ns 0
+map_Ns images/puddles_lambert62SG_Roughness.tga.png
+map_d images/puddles_lambert62SG_Opacity.tga.png
+
+newmtl lambert64
+Kd 1 1 1
+d 1
+Ke 0 0 0
+illum 2
+map_Kd images/dolly_lambert64SG_Albedo.tga.png
+map_Bump images/dolly_lambert64SG_Normal.tga.png
+Ks 1 1 1
+Ns 0
+map_Ns images/dolly_lambert64SG_Roughness.tga.png
+
+newmtl lambert38
+Kd 1 1 1
+d 1
+Ke 0 0 0
+illum 2
+map_Kd images/stairs_Big_Earl_s_Lower_stairsSG_Albedo.tg.png
+map_Bump images/stairs_Big_Earl_s_Lower_stairsSG_Normal.tg.png
+Ks 1 1 1
+Ns 0
+map_Ns images/stairs_Big_Earl_s_Lower_stairsSG_Roughness.png
+
+newmtl lambert14
+Kd 1 1 1
+d 1
+Ke 0 0 0
+illum 2
+map_Kd images/cardboard_box_lambert14SG_Albedo.tga.png
+map_Bump images/cardboard_box_lambert14SG_Normal.tga.png
+Ks 0 0 0
+Ns 0
+map_Ns images/cardboard_box_lambert14SG_Roughness.tga.png
+
+newmtl lambert63
+Kd 1 1 1
+d 1
+Ke 0 0 0
+illum 2
+map_Kd images/trash_lambert63SG_Albedo.tga.png
+map_Bump images/trash_lambert63SG_Normal.tga.png
+Ks 1 1 1
+Ns 0
+map_Ns images/trash_lambert63SG_Roughness.tga.png
+
