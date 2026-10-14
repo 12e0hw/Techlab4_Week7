@@ -24,7 +24,7 @@ struct FStaticMeshMaterialParams
 	uint32 bOpaque; // 1이면 PS가 알파를 1로 출력한다
 	float Shininess;
 	FVector SpecularColor;
-	float Padding = 0.0f;
+	uint32 bFlipNormalGreen;
 };
 static_assert(sizeof(FStaticMeshMaterialParams) == 48);
 
@@ -55,6 +55,8 @@ public:
 	FVector2 UVScrollSpeed = FVector2(0.0f, 0.0f);
 	float Shininess = 32.0f;
 	FLinearColor SpecularColor = FLinearColor(0.5f, 0.5f, 0.5f, 1.0f);
+	// OpenGL(Y+) 규칙으로 만든 노멀맵을 DirectX(Y-) 규칙으로 읽도록 G를 뒤집는다 (언리얼 Flip Green Channel)
+	bool bFlipNormalGreen = false;
 
 	bool bIsInstance = false;
 

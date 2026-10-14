@@ -528,6 +528,30 @@ namespace
 
 					ImGui::TableNextRow();
 
+					ImGui::TableSetColumnIndex(0);
+					ImGui::Text("Flip Green");
+
+					ImGui::TableSetColumnIndex(1);
+
+					bool bTempFlipGreen = Effective ? Effective->bFlipNormalGreen : false;
+					ImGui::BeginDisabled(NormalTexture == nullptr);
+					if (ImGui::Checkbox("##FlipNormalGreen", &bTempFlipGreen))
+					{
+						Override = EnsureMaterialOverride(MeshComponent, Slot, Effective, Override);
+						if (Override)
+						{
+							Override->bFlipNormalGreen = bTempFlipGreen;
+							Effective = Override;
+						}
+					}
+					ImGui::EndDisabled();
+					if (ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled))
+					{
+						ImGui::SetTooltip("OpenGL(Y+) 규칙 노멀맵이면 켠다");
+					}
+
+					ImGui::TableNextRow();
+
 					// 5: Base Color
 					ImGui::TableSetColumnIndex(0);
 					ImGui::Text("Base Color");

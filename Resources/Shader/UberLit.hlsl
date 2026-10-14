@@ -108,7 +108,7 @@ cbuffer StaticMeshMaterialParams : register(b1)
     uint bOpaque;
     float Shininess;
     float3 SpecularColor;
-    float MaterialPadding;
+    uint bFlipNormalGreen;
 };
 
 cbuffer PerObjectConstants : register(b2)
@@ -402,6 +402,7 @@ float4 mainPS(FPSInput Input) : SV_TARGET
     // Texture Normal 매핑
     float3 NormalSample = NormalTexture.Sample(AlbedoSampler, Input.UV + UVScrollOffset).xyz;
     float3 TextureNormal = normalize(NormalSample * 2.0f - 1.0f);
+    TextureNormal.y = bFlipNormalGreen ? -TextureNormal.y : TextureNormal.y;
     // TBN 행렬을 이용하여 월드 공간으로 변환
     float3 WorldNormal = mul(TextureNormal, TBN);
 # else

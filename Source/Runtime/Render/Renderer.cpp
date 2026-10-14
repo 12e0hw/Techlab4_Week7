@@ -537,6 +537,7 @@ void FRenderer::UpdateMaterialParams(const FRenderPacket& RenderPacket)
 		Params.Shininess = RenderPacket.Material->Shininess;
 		const FLinearColor Specular = ColorWorkflow::ToShaderColor(RenderPacket.Material->SpecularColor);
 		Params.SpecularColor = FVector(Specular.R, Specular.G, Specular.B);
+		Params.bFlipNormalGreen = RenderPacket.Material->bFlipNormalGreen ? 1u : 0u;
 
 		RenderCommand::UpdateBufferData(RenderPacket.Material->ParamBuffer.get(), &Params, sizeof(FStaticMeshMaterialParams));
 		// Gouraud는 VS에서 스페큘러를 계산하므로 Shininess가 VS에도 필요하다.
