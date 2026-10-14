@@ -4,6 +4,7 @@
 #include "RenderCommand.h"
 #include "RenderResourceManager.h"
 #include "ImageLoader.h"
+#include "LightInfo.h"
 
 bool FSkyboxRenderer::Init(const FString& PanoramaPath)
 {
@@ -51,14 +52,27 @@ bool FSkyboxRenderer::Init(const FString& PanoramaPath)
 	return true;
 }
 
-void FSkyboxRenderer::OnRender(const FMatrix& ViewProjection, const FVector& CameraPosition)
+void FSkyboxRenderer::OnRender(const FMatrix& ViewProjection, const FVector& CameraPosition, const FDirectionalLightInfo& DirectionalLight)
 {
 	if (!IsValid()) return;
 
 	FSkyboxConstants Constants;
-	// 업로드할 때 전치한다. HLSL은 mul(벡터, 행렬) 규약을 쓴다 (Renderer.cpp와 동일).
 	Constants.InverseViewProjection = ViewProjection.Inverse();
 	Constants.CameraPosition = CameraPosition;
+
+	if (DirectionalLight.Direction.SizeSquared() > 0.0001f)
+	{
+		Constants.SunDirection = -DirectionalLight.Direction.GetSafeNormal();
+		Constants.SunColor = DirectionalLight.Color;
+		Constants.SunIntensity = 15.0f;
+		Constants.SunRadius = 0.025f;
+	}
+	else
+	{
+		Constants.SunDirection = FVector(0.0f, 0.0f, 1.0f);
+		Constants.SunColor = FVector(1.0f, 1.0f, 1.0f);
+		Constants.SunIntensity = 0.0f;
+	}
 
 	RenderCommand::BindPipelineState(PipelineState);
 	RenderCommand::UpdateBufferData(ConstantBuffer.get(), &Constants);

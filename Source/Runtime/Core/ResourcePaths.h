@@ -11,7 +11,7 @@ namespace ResourcePaths
 	constexpr const char* DefaultFont = "Resources/Fonts/Pretendard.json";
 	constexpr const char* DefaultFontAtlas = "Resources/Fonts/Pretendard.png";
 
-	constexpr const char* DefaultSkyPanorama = "Resources/SkySphere/Sky.jpg";
+	constexpr const char* DefaultSkyPanorama = "Resources/SkySphere/Sky.png";
 	constexpr const char* DefaultParticleTexture = "Resources/SubUV/StarParticle.png";
 
 	// 라이트 빌보드 아이콘
