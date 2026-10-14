@@ -1,6 +1,6 @@
 # Blender v2.80 (sub 44) OBJ File: ''
 # www.blender.org
-mtllib backpack.mtl
+mtllib Backpack.mtl
 o Cube.028__0
 v -0.556751 -0.023763 -0.141540
 v -0.556645 0.003057 -0.140628

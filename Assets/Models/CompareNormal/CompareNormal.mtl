@@ -1,4 +1,4 @@
-# Blender 5.2.1 LTS MTL File: 'CompareNormal_Work.blend'
+# Blender 5.2.1 LTS MTL File: 'CompareNormal.blend'
 # www.blender.org
 
 newmtl Wicker_Normal.001
@@ -10,4 +10,4 @@ Ke 0.000000 0.000000 0.000000
 Ni 1.500000
 d 1.000000
 illum 2
-norm textures/Image_0.001.jpg
+norm CompareNormal_Normal.jpg

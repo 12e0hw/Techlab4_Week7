@@ -1,5 +1,5 @@
 # Unit cube with per-face UVs for normal-map testing.
-mtllib NormalMapTestCube.mtl
+mtllib NormalMapTestCube1.mtl
 o NormalMapTestCube
 usemtl NormalMapTest
 v -0.500000 -0.500000 0.500000
