@@ -277,9 +277,22 @@ void UEditorEngine::Tick(const float DeltaTime)
 {
 	// PIE 창의 닫기 버튼은 앱이 아니라 PIE 세션만 끝낸다.
 	if (PIEWindow && PIEWindow->ConsumeCloseRequest())
+	{
 		RequestEndPlayMap();
-	if (bRequestEndPlayMapQueued) { bRequestEndPlayMapQueued = false; EndPlayMap(); }
-	if (bPlaySessionRequested) { bPlaySessionRequested = false; if (!PlayWorld) StartPlayInEditorSession(); }
+	}
+	if (bRequestEndPlayMapQueued) 
+	{ 
+		bRequestEndPlayMapQueued = false; 
+		EndPlayMap(); 
+	}
+	if (bPlaySessionRequested)	
+	{
+		bPlaySessionRequested = false;
+		if (!PlayWorld)
+		{
+			StartPlayInEditorSession();
+		}
+	}
 
 	BeginFrame(DeltaTime);
 	// 임시: 선택된 Actor를 복제해서 결과를 로그로 확인 (PIE 연결 후 삭제)
@@ -1019,11 +1032,14 @@ void UEditorEngine::StartPlayInEditorSession()
 	// 별도 창 모드면 패널 View는 모두 에디터 월드로 두고 창 하나에만 PIE 월드를 그린다.
 	// 창을 만들지 못하면 선택한 View에서 실행한다.
 	if (PlayMode == EPlayModeType::InEditorFloating && CreatePIEWindow())
+	{
 		PIEViewIndex = FMultipleViewportsAdapter::ExternalViewIndex;
+	}
 	else
+	{
 		// 지금 편집 중인 View 하나만 PIE 월드를 보여준다.
 		PIEViewIndex = MultipleViewportsAdapter.GetEditorViewIndex();
-
+	}
 	FWorldContext& PIEContext = CreateNewWorldContext(EWorldType::PIE);
 	PlayWorld = CreatePIEWorldByDuplication(PIEContext, EditorWorld);
 

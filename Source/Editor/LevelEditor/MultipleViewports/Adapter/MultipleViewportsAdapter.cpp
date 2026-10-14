@@ -487,6 +487,7 @@ void FMultipleViewportsAdapter::CaptureWorld(UWorld& World)
         UPrimitiveComponent* Primitive = Scene.Proxies[i]->GetComponent();
         if (!Primitive || !Primitive->IsVisible() || !Primitive->GetOwner() ||
             Primitive->GetOwner()->GetWorld() != &World) continue;
+        if (World.IsPlayInEditor() && Primitive->IsHiddenInGame()) continue;
         const ObjectId Id = Primitive->GetUUID();
         if (Id == InvalidObjectId) continue;
 

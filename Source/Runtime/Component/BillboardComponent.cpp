@@ -13,6 +13,7 @@ UBillboardComponent::UBillboardComponent()
 {
 	QuadMesh = UAssetManager::GetAssetByPath<UStaticMesh>("ParticleQuad");
 	Material = UAssetManager::GetAssetByPath<UMaterial>("BillboardMaterial");
+	SetHiddenInGame(true);
 }
 
 // Billboard 컴포넌트의 소멸을 처리한다.

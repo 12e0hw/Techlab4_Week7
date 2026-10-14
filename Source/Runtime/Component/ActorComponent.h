@@ -31,6 +31,10 @@ public:
 	void SetHiddenInDetails(bool bInHidden) { bHiddenInDetails = bInHidden; }
 	bool IsHiddenInDetails() const { return bHiddenInDetails; }
 
+	// 게임 플레이(PIE) 중에 이 컴포넌트를 숨길지 여부
+	void SetHiddenInGame(bool bInHidden) { bHiddenInGame = bInHidden; }
+	bool IsHiddenInGame() const { return bHiddenInGame; }
+
 	// UE와 같이 기본값은 bCanEverTick = false. Tick이 필요한 컴포넌트만 생성자에서 켠다.
 	FActorComponentTickFunction PrimaryComponentTick;
 
@@ -43,5 +47,6 @@ public:
 private:
 	AActor* Owner = nullptr;
 	bool bHiddenInDetails = false;
+	bool bHiddenInGame = false;
 	bool bIsActive = true;
 };

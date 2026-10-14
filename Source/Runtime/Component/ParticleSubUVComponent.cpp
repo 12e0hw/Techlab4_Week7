@@ -21,6 +21,8 @@ UParticleSubUVComponent::UParticleSubUVComponent()
 	RowSize = 8;
 	FrameRate = 12.0f;
 
+	SetHiddenInGame(false);
+
 	// Todo: Default setting, set value from arguments
 	//AtlasTexturePath = "ParticleAtlas.png";
 	
