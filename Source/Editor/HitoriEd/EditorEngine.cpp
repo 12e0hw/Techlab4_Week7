@@ -28,6 +28,7 @@
 #include "Editor/HitoriEd/EditorFileUtils.h"
 #include "Editor/HitoriEd/EditorResourcePaths.h"
 #include "UObject/UObjectIterator.h"
+#include "Component/SpotLightComponent.h"
 #include "Core/ResourcePaths.h"
 
 #include "Core/EngineLog.h"
@@ -646,15 +647,26 @@ void UEditorEngine::RenderOverlayPass(const int32 ViewIndex, UWorld& ViewWorld, 
 	const FEditorSettings& Settings = SettingsPanel->GetSettings();
 
 	// 라인 배처는 매 프레임 한 번만 비우고 한 번만 그린다.
-	if (bShowEditorOverlay && Settings.bDrawBoundingBox && !Settings.bDepthView)
+	// 라이트 디버그 라인은 바운딩 박스 표시 여부와 무관하게 항상 그린다.
+	if (bShowEditorOverlay && !Settings.bDepthView)
 	{
 		LineBatcher->BeginFrame();
-		LineBatcher->BuildVertexBuffer(ViewWorld);
+		if (Settings.bDrawBoundingBox)
+		{
+			LineBatcher->BuildVertexBuffer(ViewWorld);
+		}
 		for (TObjectIterator<UDirectionalLightComponent> DirLight; DirLight; ++DirLight)
 		{
 			if (DirLight && DirLight->GetOwner() && DirLight->GetOwner()->GetWorld() == &ViewWorld)
 			{
 				DirLight->DrawDebug(LineBatcher.get());
+			}
+		}
+		for (TObjectIterator<USpotLightComponent> SpotLight; SpotLight; ++SpotLight)
+		{
+			if (SpotLight && SpotLight->GetOwner() && SpotLight->GetOwner()->GetWorld() == &ViewWorld)
+			{
+				SpotLight->DrawDebug(LineBatcher.get());
 			}
 		}
 		LineBatcher->OnRender(ViewProjection);

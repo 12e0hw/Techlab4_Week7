@@ -2,6 +2,8 @@
 
 #include "PointLightComponent.h"
 
+class FLineBatcher;
+
 class USpotLightComponent : public UPointLightComponent
 {
 	DECLARE_CLASS(USpotLightComponent, UPointLightComponent)
@@ -21,6 +23,8 @@ public:
 	virtual FLightSceneProxy* CreateSceneProxy() override;
 
 	virtual void PostEditChangeProperty(const FProperty& Property) override;
+
+	void DrawDebug(FLineBatcher* LineBatcher) const;
 
 protected:
 	float InnerConeAngle = 0.0f;
