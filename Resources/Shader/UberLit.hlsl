@@ -264,7 +264,7 @@ void ComputeLighting(float3 N, float3 WorldPosition, float3 V, float n, out floa
 }
 
 
-void ComputeTiledLighting(float3 N, 
+void ComputeTiledLighting(float3 N,
 #if USE_NORMAL_MAP
     float3 GeoNormal,
 #endif
@@ -310,7 +310,7 @@ float3 WorldPosition, float3 V, float n, float2 PixelPosition, out float3 Diffus
         if (GeoFactor <= 0.0f)
             continue;
 #else
-            float GeoFactor = 1.0f;
+        float GeoFactor = 1.0f;
 #endif
 
         float DistanceAttenuation = ComputeDistanceAttenuation(Distance, Radius);
@@ -340,7 +340,7 @@ float3 WorldPosition, float3 V, float n, float2 PixelPosition, out float3 Diffus
         if (GeoFactor <= 0.0f)
             continue;
 #else
-            float GeoFactor = 1.0f;
+        float GeoFactor = 1.0f;
 #endif
 
         float DistanceAttenuation = ComputeDistanceAttenuation(Distance, Radius);
@@ -405,7 +405,7 @@ float4 mainPS(FPSInput Input) : SV_TARGET
     TextureNormal.y = bFlipNormalGreen ? -TextureNormal.y : TextureNormal.y;
     // TBN 행렬을 이용하여 월드 공간으로 변환
     float3 WorldNormal = mul(TextureNormal, TBN);
-# else
+#else
     float3 WorldNormal = Normal;
 #endif
    
