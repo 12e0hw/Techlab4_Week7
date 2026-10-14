@@ -554,7 +554,7 @@ FWorldContext* UEditorEngine::GetPIEWorldContext(int32 WorldPIEInstance)
 
 // 입력 View의 Ray와 피킹으로 Gizmo·공유 선택을 갱신한다.
 void UEditorEngine::RenderOpaquePass(const int32 ViewIndex, const FRenderingInfo& ViewRenderingInfo, const FMatrix& ViewProjection, 
-	const FVector& ViewCameraLocation, const FVector& ViewCameraForward, FRenderQueue& RenderQueue)
+	const FVector& ViewCameraLocation, const FVector& ViewCameraForward, FRenderQueue& RenderQueue, const FDirectionalLightInfo& DirectionalLight)
 {
 
 	// 뷰 모드가 셰이더 permutation을, Wireframe 여부가 Fill Mode를 정한다. 삼각형 연결은 그대로다.
@@ -582,7 +582,10 @@ void UEditorEngine::RenderOpaquePass(const int32 ViewIndex, const FRenderingInfo
 	// 직교는 시선이 모두 평행해 파노라마의 한 점만 확대되므로 하늘을 그리지 않고 지우기 색을 배경으로 쓴다.
 	// 데이터 시각화 뷰도 하늘은 데이터가 없으므로 그리지 않는다.
 	if (!MultipleViewportsAdapter.IsOrthographic(ViewIndex) && !IsDataVisualization(ViewRenderMode.ViewMode))
-		SkyboxRenderer->OnRender(ViewProjection, ViewCameraLocation);
+	{ 
+		SkyboxRenderer->OnRender(ViewProjection, ViewCameraLocation, DirectionalLight);
+	}
+
 	if (bDrawPrimitives)
 	{
 		RenderCommand::SetRasterizerState(SceneRasterizerState);
@@ -899,7 +902,7 @@ void UEditorEngine::RenderFrame(const int32 ViewIndex, UWorld& ViewWorld,
 	Renderer->SetLighting(Lighting, PointLights, SpotLights);
 
 	// 1. 불투명·반투명 Pass (Linear 씬 컬러)
-	RenderOpaquePass(ViewIndex, SceneRenderingInfo, ViewProjection, ViewCameraLocation, ViewCameraForward, RenderQueue);
+	RenderOpaquePass(ViewIndex, SceneRenderingInfo, ViewProjection, ViewCameraLocation, ViewCameraForward, RenderQueue, Lighting.Directional);
 
 	if (SettingsPanel->GetSettings().bDepthView)
 	{
