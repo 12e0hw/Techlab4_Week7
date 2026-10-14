@@ -1043,6 +1043,44 @@ void UEditorEngine::StartPlayInEditorSession()
 	FWorldContext& PIEContext = CreateNewWorldContext(EWorldType::PIE);
 	PlayWorld = CreatePIEWorldByDuplication(PIEContext, EditorWorld);
 
+	if (PlayWorld)
+	{
+		// 1. 씬에 배치된 ACameraActor가 있으면 해당 카메라를 메인 카메라로 지정
+		ACameraActor* PlacedCamera = nullptr;
+		if (PlayWorld->GetPersistentLevel())
+		{
+			for (AActor* Actor : PlayWorld->GetPersistentLevel()->GetActors())
+			{
+				if (ACameraActor* CamActor = Cast<ACameraActor>(Actor))
+				{
+					PlacedCamera = CamActor;
+					break;
+				}
+			}
+		}
+
+		if (PlacedCamera)
+		{
+			PlayWorld->SetMainCamera(PlacedCamera);
+		}
+		else if (PlayWorld->GetMainCamera())
+		{
+			// 2. 배치된 카메라가 없으면 현재 활성 에디터 뷰포트 시점에서 시작
+			const int32 SourceViewIndex = MultipleViewportsAdapter.GetEditorViewIndex();
+			const FViewCamera& EditorCam = MultipleViewportsAdapter.GetViewCamera(SourceViewIndex);
+			if (UCameraComponent* GameCam = PlayWorld->GetMainCamera()->GetCameraComponent())
+			{
+				GameCam->SetRelativeLocation(EditorCam.Transform.Location);
+				GameCam->SetRelativeRotation(EditorCam.Transform.Rotation.ToFRotator());
+				GameCam->SetFieldOfView(EditorCam.Projection.FovDegrees);
+				GameCam->SetNearZ(EditorCam.Projection.NearClip);
+				GameCam->SetFarZ(EditorCam.Projection.FarClip);
+				GameCam->SetIsOrthogonal(EditorCam.Projection.Mode == EProjectionMode::Orthographic);
+				GameCam->SetOrthoWidth(EditorCam.Projection.OrthoWidth);
+			}
+		}
+	}
+
 	OnActiveWorldChanged();
 }
 
