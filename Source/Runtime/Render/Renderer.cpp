@@ -514,7 +514,9 @@ void FRenderer::BindMaterial(UMaterial* material)
 
 	for (int i = 0; i < material->Textures.size(); i++)
 	{
-		RenderCommand::BindShaderResource(i, material->Textures[i], EShaderBindFlagBits::Pixel);
+		// 같은 파일이 먼저 sRGB로 캐시됐을 수 있어 노멀맵 슬롯은 불러온 방식과 무관하게 원본 값으로 읽는다.
+		const bool bNormalMapSlot = material->ParamLayout == EMaterialParamLayout::StaticMesh && i == 1;
+		RenderCommand::BindShaderResource(i, material->Textures[i], EShaderBindFlagBits::Pixel, bNormalMapSlot);
 	}
 	RenderCommand::BindSamplerState(0, material->SamplerState, EShaderBindFlagBits::Pixel);
 }

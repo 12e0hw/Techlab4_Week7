@@ -71,8 +71,9 @@ public:
 	// 한 번의 Map으로 버퍼 전체를 채울 때 쓴다. 반환 포인터에는 순차적으로 쓰기만 해야 한다.
 	static void* MapWriteDiscard(FBuffer* InBuffer);
 	static void Unmap(FBuffer* InBuffer);
-	static void BindShaderResource(uint32 Slot, FTexture2D* Texture2D, EShaderBindFlagBits FlagBits);
-	static void BindShaderResource(uint32 Slot, UTexture2D* Texture2D, EShaderBindFlagBits FlagBits);
+	// bRawData: 노멀맵처럼 색이 아닌 데이터는 sRGB로 불러왔더라도 저장된 값 그대로 읽는다.
+	static void BindShaderResource(uint32 Slot, FTexture2D* Texture2D, EShaderBindFlagBits FlagBits, bool bRawData = false);
+	static void BindShaderResource(uint32 Slot, UTexture2D* Texture2D, EShaderBindFlagBits FlagBits, bool bRawData = false);
 	// 슬롯의 SRV를 비운다. 같은 텍스처를 다음 패스에서 RTV로 쓰기 전에 호출한다.
 	static void UnbindShaderResource(uint32 Slot, EShaderBindFlagBits FlagBits);
 	// 크기·포맷이 같은 두 텍스처의 내용을 통째로 복사한다.
